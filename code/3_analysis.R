@@ -59,7 +59,7 @@ ggplot(howmany, aes(x=cluster,y = n, group = interaction(inocl,drytime))) + geom
 ggsave("plots/ana_clusters_by_inoc_drytime.pdf") # no double / spike at 3 / 5
 
 ### Does normal or double have higher total energy? (AUC)
-cluster_data$cluster <- factor(cluster_data$cluster, levels = c("double","spike","normal","post_shoulder","wide","no cluster"))x
+cluster_data$cluster <- factor(cluster_data$cluster, levels = c("double","spike","normal","post_shoulder","wide","no cluster"))
 cluster_data$inocl <- factor(cluster_data$inocl)
 cluster_data$drytime <- factor(cluster_data$drytime)
 cluster_data$name <- factor(cluster_data$name)
@@ -79,10 +79,24 @@ ggplot(cluster_data_summ , aes(x = cluster, y = mean, fill = factor(inocl))) +
 ggsave("plots/ana_all_summary.pdf")
 
 
-ggplot(cluster_data_summ %>% filter(name %in% c("valpeak","auc")), aes(x = cluster, y = mean, fill = factor(inocl))) + 
+ggplot(cluster_data_summ %>% filter(name %in% c("valpeak","auc","timepeak")), aes(x = cluster, y = mean, fill = factor(inocl))) + 
   geom_bar(stat="identity", color="black", position=position_dodge())+
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, position=position_dodge(.9)) + 
   facet_grid(name ~ drytime, scales = "free") + scale_fill_discrete("Inoculum") 
-ggsave("plots/ana_auc&valpeak_summary.pdf")
+ggsave("plots/ana_auc&val&timepeak_summary.pdf")
 
+ggplot(cluster_data_summ %>% filter(name %in% c("valpeak","auc","timepeak"), cluster %in% c("normal","spike","double")), aes(x = cluster, y = mean, fill = factor(inocl))) + 
+  geom_bar(stat="identity", color="black", position=position_dodge())+
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, position=position_dodge(.9)) + 
+  facet_grid(name ~ drytime, scales = "free") + scale_fill_discrete("Inoculum") 
+ggsave("plots/ana_auc&val&timepeak_norm_double.pdf")
+
+my_comparisons <- list( c("post_shoulder", "double"), c("double", "normal"), c("normal", "post_shoulder"),c("normal","spike"),c("spike","wide"),
+                        c("double","spike"),c("double","wide"))
+
+ggplot(cluster_data_summ , aes(x = cluster, y = mean, fill = factor(inocl))) + 
+  geom_bar(stat="identity", color="black", position=position_dodge())+
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, position=position_dodge(.9)) + 
+  facet_grid(name~drytime , scales = "free") + scale_fill_discrete("Inoculum") + 
+  stat_compare_means(comparisons = my_comparisons)
 
