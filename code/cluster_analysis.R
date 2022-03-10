@@ -194,7 +194,14 @@ nd <- left_join(as.data.frame(ddm_5), spiked_analysis[,c("strain","rep","n_spike
 g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spike))) + facet_wrap(~strain)
 ggsave("plots/inoc_5_spike_peaks.pdf")
 
+spiked_plus_analysis <- as.data.frame(param %>% mutate(odd_spike = odd_peaks + odd_shoulder + odd_shoulder_past) %>% filter(odd_spike > 0) %>% group_by(strain) %>% mutate(n_spike = n())) # how many have spikes in all? 
+ggplot(spiked_plus_analysis %>% group_by(strain) %>% slice(1), aes(n_spike)) + geom_histogram(binwidth = 1)
+nd <- left_join(as.data.frame(ddm_5), spiked_plus_analysis[,c("strain","rep","n_spike")], by = c("strain", "rep"))
+g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spike))) + facet_wrap(~strain)
+ggsave("plots/inoc_5_spike_plus_peaks.pdf")
+
 peaks_spike <- spiked_analysis %>% filter(n_spike > 1) %>% filter(!strain %in% unlist(peaks_double)) %>% ungroup() %>% summarise(unique(strain)) # 2 or more have spike
+peaks_spike_plus <- spiked_plus_analysis %>% filter(n_spike > 1) %>% filter(!strain %in% unlist(peaks_double)) %>% ungroup() %>% summarise(unique(strain)) # 2 or more have spike
 length(u) - dim(peaks_double)[1] - dim(peaks_normal)[1] - dim(peaks_spike)[1] # left to assign
 ddm_5[which(ddm_5$strain %in% unlist(peaks_spike)), "cluster"] = "spike"
 param[which(param$strain %in% unlist(peaks_spike)), "cluster"] = "spike"

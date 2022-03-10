@@ -1,7 +1,7 @@
 # EXPLORE BEHAVIOUR FOR ONE STRAIN 
 # DATASET
-strain <- "11122" # 11161
-replicate <-9.3  #10.2
+strain <- "11223" # 11161
+replicate <-11.2  #10.2
 condition <- 0
 inocl <- 5
 
@@ -59,9 +59,9 @@ lines(c(interval_peak[2],interval_peak[2]), c(-0.020,0.1), col = "red", lty = "d
 ##### PEAKS
 # (2) Are there multiple peaks? 
 # GIVES WHERE ALL PEAKS ARE (greater or equal to (m) 5 points around them)
-peaks_index = find_peaks(data1$value_J, m = 4)
+peaks_index = find_peaks(data1$value_J, m = 5)
 if(length(peaks_index) > 1){
-  peaks_index_orig = find_peaks(data1$value_J, m = 4)
+  peaks_index_orig = find_peaks(data1$value_J, m = 5)
   # REMOVE - early ones
   we<-which(data1[peaks_index,"Time"]>3) 
   # REMOVE - late ones
@@ -108,7 +108,7 @@ lines(c(time_peaks[1]-5,time_peaks[1]+5),c(data1[peaks_index[1],"value_J"],data1
 
 # (2) Are there multiple peaks? 
 # GIVES WHERE ALL PEAKS ARE (greater or equal to (m) 5 points around them)
-peaks_index = find_peaks(data1$value_J, m = 4)
+peaks_index = find_peaks(data1$value_J, m = 5)
 # REMOVE - early ones
 w<-which(data1[peaks_index,"Time"]>3) 
 # REMOVE - late ones

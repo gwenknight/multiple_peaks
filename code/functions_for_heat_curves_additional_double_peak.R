@@ -34,7 +34,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
   ## Time = name of time column
   ## value = name of value column
   ## name4output = strain, replicate, condition, inocl = labels for output
-  ## thresh_wide = 90: % what is a wide peak? 
+  ## thresh_wide = 86: % what is a wide peak? 
   ## plot = 0:  don't plot. 1 to plot
   ## plot_where: location for files to output to  
   ## early_cut: for heat flow, remove the first 3.5hrs of data 
@@ -118,7 +118,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
                  close_peaks_i <- c(close_peaks_i,i),"")
         }}
       
-      if(length(close_peaks_i) > 1){odd_peak <- 1} # if multiple close time and height peaks
+      #if(length(close_peaks_i) > 1){odd_peak <- 1} # if multiple close time and height peaks
       
       # Only keep those peaks that are far apart
       time_peaks <- time_peaks[c(1,keep_time_far_apart)]
@@ -546,7 +546,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
   s_peak <- summary(gc_fit)
   
   ## (10) Record all minor peaks 
-  peaks_index_minor = as.numeric(find_peaks(unlist(ts[,value]), m = 2))
+  peaks_index_minor = as.numeric(find_peaks(unlist(ts[,value]), m = 5))
   if(length(peaks_index_minor) > 0){ # MAY BE NO PEAK
     if(length(peaks_index_minor) > 1){
       # REMOVE - early ones
@@ -592,12 +592,12 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
                  close_peaks_i <- c(close_peaks_i,i),"")
         }}
       
-      if(length(close_peaks_i) >= 1){odd_peak <- 1} # if multiple close time and height peaks
+      # if(length(close_peaks_i) >= 1){odd_peak <- 1} # if multiple close time and height peaks
       
       # Only keep those peaks that are far apart
       time_peaks <- time_peaks[c(1,keep_time_far_apart)]
       peaks_index_minor <- peaks_index_minor[c(1,keep_time_far_apart)]
-      val_peaks <- ts[peaks_index_minor, value]
+      val_peaks <- unlist(ts[peaks_index_minor, value])
     }
   }
   
@@ -611,7 +611,8 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
   ## (11) AUC
   # From lag time to 10 hrs after
   lag_time <- as.numeric(which.min(abs(unlist(ts[,Time]) - s$lambda.spline)))
-  ten_after_lag = as.numeric(which.min(abs(unlist(ts[,Time]) - (s$lambda.spline + 10))))
+  ten_after = ifelse(max(ts[,Time])<100,10,10*60*60) # units in current data either hours or seconds (latter is 10 hrs of seconds)
+  ten_after_lag = as.numeric(which.min(abs(unlist(ts[,Time]) - (s$lambda.spline + ten_after))))
   gc_fit_auc <- gcFitSpline(ts[c(lag_time:ten_after_lag),Time], ts[c(lag_time:ten_after_lag),value])
   # parameters from this fit
   s_auc <- summary(gc_fit_auc)
@@ -691,7 +692,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       clustered = unlist(sub_ts %>% filter(!cluster == "") %>% summarise(unique(strain)))
       
       ####***** (Cluster 4) Clear post shoulders
-      post_should_analysis <- as.data.frame(sub_parm %>% filter(odd_shoulder_past == 1) %>% group_by(strain, inocl, drytime) %>% mutate(n_spast= n())) # how many have spikes in all? 
+      post_should_analysis <- as.data.frame(sub_parm %>% filter(odd_shoulder_past == 1) %>% group_by(strain, inoc, drytime) %>% mutate(n_spast= n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), post_should_analysis[,c("strain","rep","n_spast")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spast))) + facet_wrap(~strain)+ 
         scale_color_manual("Number of\nreps with\npast peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
@@ -712,7 +713,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       #ggsave(paste0(plot_where,name,"_shoulder_pre.pdf"))
       
       # (Cluster 5) Wide
-      wide_analysis <- as.data.frame(sub_parm %>% filter(odd_width == 1) %>% group_by(strain, inocl, drytime) %>% mutate(n_wide = n())) # how many have spikes in all? 
+      wide_analysis <- as.data.frame(sub_parm %>% filter(odd_width == 1) %>% group_by(strain, inoc, drytime) %>% mutate(n_wide = n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), wide_analysis[,c("strain","rep","n_wide")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_wide))) + facet_wrap(~strain) + 
         scale_color_manual("Number of\nreps with\nwide peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
@@ -742,7 +743,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       cbp = c("#D55E00","#E69F00","#0072B2","#56B4E9","#F0E442","#999999")
       g <- ggplot(sub_ts, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(cluster))) + facet_wrap(~strain) + 
         scale_color_manual("Cluster", breaks = c("double","spike","normal","post_shoulder","wide",""), labels = c("double","spike","normal","post_shoulder","wide","none"), 
-                                      values = cbp) + 
+                           values = cbp) + 
         ggtitle(paste0("Drytime = ",drytimes[j],", Inoculum = ",inocs[k]))
       ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_grouped.pdf"))
       
@@ -752,7 +753,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
                            values = cbp)
       ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_grouped_rows.pdf"))
       
-
+      
       
       ### Bind together for now 
       parameters_end <- rbind(parameters_end, sub_parm)
