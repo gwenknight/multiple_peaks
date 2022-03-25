@@ -37,6 +37,25 @@ g3 <- ggplot(data_od, aes(x=Time, y = compara, group = interaction(rep, exp, str
   scale_x_continuous("Time (h)") 
 ggsave("plots/ODvsCS_inoc5_data_compare.pdf")
 
+# Try to plot together? scale by max. Normalise
+data_od <- data_od %>% group_by(strain, rep, exp) %>% mutate(max_v = max(compara, na.rm = TRUE),
+                                                             compara_norm = compara / max_v)
+
+ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
+  geom_line(aes(col = interaction(exp, rep), lty = exp), lwd = 1) + 
+  facet_wrap(~strain, scales = "free", ncol = 2) + 
+  scale_x_continuous("Time (h)") 
+ggsave("plots/ODvsCS_inoc5_data_compare_norm.pdf")
+
+# Subtract normalised data? 
+data_od_normd <- data_od %>% group_by(strain, rep, exp) %>% dplyr::select(Time, rep, exp, compara_norm) %>% 
+  pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm) %>% mutate(nongrowth_only = CS - OD)
+ggplot(data_od_normd, aes(x=Time, y = nongrowth_only, group = interaction(rep, exp, strain))) + 
+  geom_line(aes(col = interaction(exp, rep), lty = exp), lwd = 1) + 
+  facet_wrap(~strain, scales = "free", ncol = 2) + 
+  scale_x_continuous("Time (h)") 
+ggsave("plots/ODvsCS_inoc5_data_nongrowth_only.pdf")
+
 ### Extract characteristics
 
 ## What are the strains?
@@ -110,7 +129,7 @@ dim(param)
 
 ## Store so don't have to run above
 write.csv(param, "output/param_od.csv")
-
+#param <- read_csv("output/param_od.csv")[,-1]
 
 ### look at OD vs CS
 param_wide_timepeak <- param %>% pivot_wider(id_cols = c(strain, rep),names_from = experiment, values_from = c(timepeak))
@@ -119,6 +138,8 @@ ggplot(param, aes(x=interaction(strain,rep), y = timepeak)) + geom_point(aes(col
 ggplot(param_wide_timepeak, aes(x=CS, y = OD)) + geom_point(aes(col = strain)) + 
   scale_y_continuous(lim = c(0,31000)) + 
   geom_smooth(method='lm', formula= y~x)
+
+ggplot(param, aes(x=interaction(strain,rep), y = exp_gr)) + geom_point(aes(col = experiment))
 
 ### clustering? 
 data_od$drytime <- 0

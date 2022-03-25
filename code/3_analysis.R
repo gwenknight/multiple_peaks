@@ -34,8 +34,8 @@ ts[w,"cluster"] <- "no cluster"
 
 #### Questions
 ### Second peaks? 
-# if more than 5 from end of exp then ok - check up to third minor. mp_t1 = first peak
-para <- para %>% mutate(second_peak_h = ifelse(mp_h2 > 0, ifelse(mp_t2 > (timepeak + 5), mp_h2, ifelse(mp_h3>0,ifelse(mp_h3 > (timepeak + 5), mp_h3,0),0)),0)) 
+#OLD: if more than 5 from end of exp then ok - check up to third minor. mp_t1 = first peak ##ifelse(mp_h2 > 0, ifelse(mp_t2 > (timepeak + 5), mp_h2, ifelse(mp_h3>0,ifelse(mp_h3 > (timepeak + 5), mp_h3,0),0)),0)) 
+para <- para %>% ungroup() %>% mutate(second_peak_h = ifelse((t_m_h_flow > (timepeak + 2)), v_m_h_flow, ifelse(mp_t2 > (timepeak + 4), mp_h2, 0))) # if first is no max then second = max, otherwise 1st is max so take next 
 
 
 cluster_data <- para %>% dplyr::select(c("strain","rep","drytime","inocl","cluster","valpeak", "timepeak", "auc", "exp_gr", "shoulder_point_v","shoulder_point_t",
@@ -56,7 +56,7 @@ ggsave("plots/ALL_clusters_boxplot.pdf")
 
 #### How many of each cluster type by inoculum and drytime? 
 para2 <- para
-para2$cluster <- factor(para2$cluster, levels = c("double","spike","normal","post_shoulder","wide","no cluster"))
+para2$cluster <- factor(para2$cluster, levels = c("normal","double","spike","post_shoulder","wide","no cluster"))
 howmany <- para2 %>% group_by(inocl, drytime, cluster,  .drop=FALSE) %>% summarise( n = n()) %>% complete(cluster, fill = list(n = 0))
 #ggplot(howmany, aes(x=cluster,y = n, group = interaction(inocl,drytime))) + geom_point(aes(col = interaction(inocl,drytime))) + geom_line(aes(col = interaction(inocl,drytime))) + 
 #  facet_wrap(~drytime)
@@ -66,7 +66,7 @@ ggplot(howmany, aes(x=cluster,y = n, group = interaction(inocl,drytime))) + geom
 ggsave("plots/ana_clusters_by_inoc_drytime.pdf") # no double / spike at 3 / 5
 
 ### Does normal or double have higher total energy? (AUC)
-cluster_data$cluster <- factor(cluster_data$cluster, levels = c("double","spike","normal","post_shoulder","wide","no cluster"))
+cluster_data$cluster <- factor(cluster_data$cluster, levels = c("normal","double","spike","post_shoulder","wide","no cluster"))
 cluster_data$inocl <- factor(cluster_data$inocl)
 cluster_data$drytime <- factor(cluster_data$drytime)
 cluster_data$name <- factor(cluster_data$name)
@@ -83,6 +83,21 @@ g + stat_compare_means(comparisons = my_comparisons)
 ggsave("plots/inoc_5_story_boxplot_stats.pdf", width = 20, height = 8)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###### OLD ANALYSIS
 
 ggplot(cluster_data_summ %>% filter(name == "auc"), aes(x = cluster, y = mean, fill = factor(inocl))) + 
   geom_bar(stat="identity", color="black", position=position_dodge())+
