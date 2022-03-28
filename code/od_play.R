@@ -1,6 +1,8 @@
 ### Exploring OD data
 
 library(zoo)
+library(imputeTS) # to give weighter moving average - exponential weighting of those further away
+library(patchwork)
 setwd(here::here())
 
 # Data to explore
@@ -47,14 +49,49 @@ ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, stra
   scale_x_continuous("Time (h)") 
 ggsave("plots/ODvsCS_inoc5_data_compare_norm.pdf")
 
-# Subtract normalised data? 
-data_od_normd <- data_od %>% group_by(strain, rep, exp) %>% dplyr::select(Time, rep, exp, compara_norm) %>% 
-  pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm) %>% mutate(nongrowth_only = CS - OD)
-ggplot(data_od_normd, aes(x=Time, y = nongrowth_only, group = interaction(rep, exp, strain))) + 
-  geom_line(aes(col = interaction(exp, rep), lty = exp), lwd = 1) + 
+# Subtract normalised data? Need to complete: measured at different time points
+# remove all data before the time point that they all have which is the max of the minimum times to avoid odd completion curves prior to start and after
+cutoff_time_dn = max(data_od %>% summarise(minn = min(Time)) %>% ungroup() %>% dplyr::select(minn))
+cutoff_time_up = min(data_od %>% summarise(maxx = max(Time)) %>% ungroup() %>% dplyr::select(maxx))
+
+#data_play <- data_od[c(1:100,1149:1259),] %>% filter(Time > cutoff_time)
+#data_play <- data_play %>% ungroup() %>% complete(exp, Time) %>% mutate(compara_norm_inp = na_ma(compara_norm, k = 2, weighting = "exponential", maxgap = Inf)) %>% print(n=Inf)
+#ggplot(data_play, aes(x=Time, y = compara_norm, group = exp)) + geom_line(aes(group = exp, col = exp)) + 
+#  geom_line(aes(y = compara_norm_inp, group = exp, col = exp), linetype = 2) 
+
+data_od_normd <- data_od %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up) %>% # make sure cover same time for all 
+  complete(rep, strain, exp, Time) %>% mutate(compara_norm_inp = na_ma(compara_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
+  group_by(strain, rep, exp) %>% dplyr::select(Time, strain,rep, exp, compara_norm_inp) %>% # Take imputed values
+  pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm_inp) %>% mutate(nongrowth_only = CS - OD) %>% # look for difference between OD and heat output
+  pivot_longer(cols = c("CS","OD"), names_to = "exp", values_to ="imput_val")
+
+data_od_normd_ana <- left_join(data_od, data_od_normd)
+
+ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(exp,rep, strain))) + 
+  geom_line(aes(col = interaction(exp,rep)), lwd = 1) + 
+  geom_line(aes(y = imput_val,col = interaction(exp,rep))) + 
   facet_wrap(~strain, scales = "free", ncol = 2) + 
   scale_x_continuous("Time (h)") 
-ggsave("plots/ODvsCS_inoc5_data_nongrowth_only.pdf")
+ggsave("plots/ODvsCS_inoc5_data_nongrowth_togplot.pdf")
+
+
+g1 <- ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
+  geom_line(aes(col = interaction(rep))) + 
+  facet_wrap(~strain, ncol = 4) + 
+  scale_x_continuous("Time (h)") + 
+  scale_y_continuous("Non growth only") + 
+  scale_color_discrete("Replicate")
+
+g2 <- ggplot(data_od_normd_ana, aes(x=Time, group = interaction(exp,rep, strain))) + 
+  geom_line(aes(y = imput_val,col = interaction(rep), linetype = exp)) + 
+  facet_wrap(~strain, scales = "free", ncol = 4) + 
+  scale_x_continuous("Time (h)") + 
+  scale_y_continuous("Normalised measure") + 
+  scale_color_discrete("Experiment and\nreplicate")
+
+g2 / g1 
+ggsave("plots/ODvsCS_inoc5_data_nongrowth_tog_grid.pdf")
+
 
 ### Extract characteristics
 
@@ -70,6 +107,7 @@ param <- matrix(0, length(u)*length(r)*length(ex), 50); # number of strains x nu
 index <- 1 # for counting 
 max <- c() # for calibration
 
+data_od <- data_od %>% ungroup()
 
 ## Run thru each strain/rep/drying time/ inoculum: fit a growth curve to each
 for(jj in 1:length(u)){ # for each strain
@@ -147,6 +185,7 @@ param$drytime <- 0
 data_od$inoc <- 5
 param$inoc <- 5
 data_od$strain <- as.character(data_od$strain)
+param$strain <- as.character(param$strain)
 data_od$value_J <- data_od$compara
 
 

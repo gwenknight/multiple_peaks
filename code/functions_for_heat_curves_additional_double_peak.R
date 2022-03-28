@@ -730,9 +730,11 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       odd_normal_peak_curves_analysis <- as.data.frame(sub_parm %>% mutate(odd = odd_peaks + odd_width + odd_shoulder + odd_shoulder_past, 
                                                                            odd_label = paste(odd_peaks,odd_width,odd_shoulder,odd_shoulder_past)))
       nd <- left_join(as.data.frame(sub_ts %>% filter(cluster =="")), odd_normal_peak_curves_analysis[,c("strain","rep","odd","odd_label")], by = c("strain", "rep"))
-      g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(odd_label))) + facet_wrap(~strain) + 
+      if(dim(nd)[1]!=0){
+        g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(odd_label))) + facet_wrap(~strain) + 
         scale_color_discrete("peak / width / shoulder / shoulder past")
       ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_not_clustered.pdf"))
+      }
       
       # Wide assign to shoulder past - analysis of 0t / 5inoc suggest most had one past shoulder / one wide and often wide == really past shoulder
       make_shoulder_past <- odd_normal_peak_curves_analysis %>% filter(odd_label == "0 1 0 0") %>% filter(!strain %in% clustered) %>% ungroup() %>% summarise(unique(strain))
