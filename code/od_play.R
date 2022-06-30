@@ -43,15 +43,23 @@ g2 <- ggplot(data_od, aes(x=Time, y = ma_value, group = interaction(rep, exp, st
   scale_x_continuous("Time (h)") 
 ggsave("plots/ODvsCS_inoc5_data_smoothed.pdf")
 
-g3 <- ggplot(data_od, aes(x=Time, y = compara, group = interaction(rep, exp, strain))) + 
+g3a <- ggplot(data_od, aes(x=Time, y = compara, group = interaction(rep, exp, strain))) + 
   geom_line(aes(col = factor(rep))) + 
   facet_grid(exp~strain, scales = "free") + 
   scale_x_continuous("Time (h)") 
 ggsave("plots/ODvsCS_inoc5_data_compare.pdf")
 
-# Try to plot together? scale by max. Normalise
-data_od <- data_od %>% group_by(strain, rep, exp) %>% mutate(max_v = max(compara, na.rm = TRUE),
-                                                             compara_norm = compara / max_v)
+# Try to plot together? Need to normalise... 
+## First tried scale by max. Normalise - but then don't get comparison between strains
+# data_od <- data_od %>% group_by(strain, rep, exp) %>% mutate(max_v = max(compara, na.rm = TRUE),
+#                                                              compara_norm = compara / max_v)
+# Second find normal - divide by max of that then subtract
+strains <- c("11016","11051", "11210", "11257")
+clusters <- c("spike", "double", "spike", "normal")
+max_vals_norm <- data_od %>% filter(strain == "11257") %>% group_by(rep, exp )%>% summarise(max_norms = max(compara, na.rm = TRUE))
+
+data_od <- left_join(data_od, max_vals_norm) %>% mutate(compara_norm = compara / max_norms)
+
 
 ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
   geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
@@ -90,43 +98,44 @@ g1 <- ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interact
   scale_x_continuous("Time (h)") + 
   scale_y_continuous("Non growth only") + 
   scale_color_discrete("Replicate") + 
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = c(0,0.5)) + 
+  geom_vline(xintercept = c(25000,30000))
 
 g2 <- ggplot(data_od_normd_ana, aes(x=Time, group = interaction(exp,rep, strain))) + 
   geom_line(aes(y = imput_val,col = interaction(rep), linetype = exp)) + 
-  facet_wrap(~strain, scales = "free", ncol = 4) + 
+  facet_wrap(~strain, ncol = 4) + 
   scale_x_continuous("Time (h)") + 
   scale_y_continuous("Normalised measure") + 
   scale_color_discrete("Experiment and\nreplicate")
 
-g2 / g1 
-ggsave("plots/ODvsCS_inoc5_data_nongrowth_tog_grid.pdf")
+g3a / g2 / g1 
+ggsave("plots/ODvsCS_inoc5_data_nongrowth_tog_grid.pdf", width = 20, height = 20)
 
 ###### Norm by subtracting the "normal curve" = 11257
-# Normalise
-data_od_11257 <- data_od %>% filter(strain == 11257) %>% ungroup()
-data_11257 <- data_od_11257 %>% select(Time, rep, exp, compara) %>% rename(comp_11257 = compara)
-
-data_od_sub <- data_od %>% group_by(strain, rep, exp) %>% left_join(data_11257) %>% 
-  mutate(compara_sub = compara - comp_11257,# subtract "normal" curve
-         max_v_s = max(compara_sub, na.rm = TRUE), # then normalise
-        compara_sub_norm = compara / max_v_s) 
-
-ggplot(data_od_sub, aes(x=Time, y = compara_sub, group = interaction(rep, exp, strain))) + 
-  geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
-  facet_wrap(~strain, scales = "free", ncol = 2) + 
-  scale_x_continuous("Time (h)") + 
-  scale_color_discrete("Replicate") + 
-  scale_linetype("Data")
-ggsave("plots/ODvsCS_inoc5_data_compare_sub.pdf")
-
-ggplot(data_od_sub, aes(x=Time, y = compara_sub_norm, group = interaction(rep, exp, strain))) + 
-  geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
-  facet_wrap(~strain, scales = "free", ncol = 2) + 
-  scale_x_continuous("Time (h)") + 
-  scale_color_discrete("Replicate") + 
-  scale_linetype("Data")
-ggsave("plots/ODvsCS_inoc5_data_compare_subn.pdf")
+# # Normalise
+# data_od_11257 <- data_od %>% filter(strain == 11257) %>% ungroup()
+# data_11257 <- data_od_11257 %>% select(Time, rep, exp, compara) %>% rename(comp_11257 = compara)
+# 
+# data_od_sub <- data_od %>% group_by(strain, rep, exp) %>% left_join(data_11257) %>% 
+#   mutate(compara_sub = compara - comp_11257,# subtract "normal" curve
+#          max_v_s = max(compara_sub, na.rm = TRUE), # then normalise
+#         compara_sub_norm = compara / max_v_s) 
+# 
+# ggplot(data_od_sub, aes(x=Time, y = compara_sub, group = interaction(rep, exp, strain))) + 
+#   geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
+#   facet_wrap(~strain, scales = "free", ncol = 2) + 
+#   scale_x_continuous("Time (h)") + 
+#   scale_color_discrete("Replicate") + 
+#   scale_linetype("Data")
+# ggsave("plots/ODvsCS_inoc5_data_compare_sub.pdf")
+# 
+# ggplot(data_od_sub, aes(x=Time, y = compara_sub_norm, group = interaction(rep, exp, strain))) + 
+#   geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
+#   facet_wrap(~strain, scales = "free", ncol = 2) + 
+#   scale_x_continuous("Time (h)") + 
+#   scale_color_discrete("Replicate") + 
+#   scale_linetype("Data")
+# ggsave("plots/ODvsCS_inoc5_data_compare_subn.pdf")
 
 # Subtract normalised data? Need to complete: measured at different time points
 
@@ -135,41 +144,41 @@ ggsave("plots/ODvsCS_inoc5_data_compare_subn.pdf")
 #ggplot(data_play, aes(x=Time, y = compara_norm, group = exp)) + geom_line(aes(group = exp, col = exp)) + 
 #  geom_line(aes(y = compara_norm_inp, group = exp, col = exp), linetype = 2) 
 
-data_od_sub_normd <- data_od_sub %>% ungroup() %>% 
-  complete(rep, strain, exp, Time) %>% mutate(compara_norm_inp = na_ma(compara_sub_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
-  group_by(strain, rep, exp) %>% dplyr::select(Time, strain,rep, exp, compara_norm_inp) %>% # Take imputed values
-  pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm_inp) %>% mutate(nongrowth_only = CS - OD) %>% # look for difference between OD and heat output
-  pivot_longer(cols = c("CS","OD"), names_to = "exp", values_to ="imput_val")
+# data_od_sub_normd <- data_od_sub %>% ungroup() %>% 
+#   complete(rep, strain, exp, Time) %>% mutate(compara_norm_inp = na_ma(compara_sub_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
+#   group_by(strain, rep, exp) %>% dplyr::select(Time, strain,rep, exp, compara_norm_inp) %>% # Take imputed values
+#   pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm_inp) %>% mutate(nongrowth_only = CS - OD) %>% # look for difference between OD and heat output
+#   pivot_longer(cols = c("CS","OD"), names_to = "exp", values_to ="imput_val")
+# 
+# data_od_sub_normd_ana <- left_join(data_od, data_od_sub_normd)
+# 
+# ggplot(data_od_sub_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(exp,rep, strain))) + 
+#   geom_line(aes(col = factor(rep)), lwd = 1) + 
+#   geom_line(aes(y = imput_val,col = interaction(rep))) + 
+#   facet_wrap(~strain, scales = "free", ncol = 2) + 
+#   scale_x_continuous("Time (h)") 
+# ggsave("plots/ODvsCS_inoc5_data_nongrowth_togplot_sub.pdf")
+# 
+# 
+# g1 <- ggplot(data_od_sub_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
+#   geom_line(aes(col = interaction(rep))) + 
+#   facet_wrap(~strain, ncol = 4) + 
+#   scale_x_continuous("Time (h)") + 
+#   scale_y_continuous("Non growth only") + 
+#   scale_color_discrete("Replicate") + 
+#   geom_hline(yintercept = 0)
+# 
+# g2 <- ggplot(data_od_sub_normd_ana, aes(x=Time, group = interaction(exp,rep, strain))) + 
+#   geom_line(aes(y = imput_val,col = interaction(rep), linetype = exp)) + 
+#   facet_wrap(~strain, scales = "free", ncol = 4) + 
+#   scale_x_continuous("Time (h)") + 
+#   scale_y_continuous("Normalised measure") + 
+#   scale_color_discrete("Experiment and\nreplicate")
+# 
+# g2 / g1 
+# ggsave("plots/ODvsCS_inoc5_data_nongrowth_tog_grid_sub.pdf", width = 20)
 
-data_od_sub_normd_ana <- left_join(data_od, data_od_sub_normd)
-
-ggplot(data_od_sub_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(exp,rep, strain))) + 
-  geom_line(aes(col = factor(rep)), lwd = 1) + 
-  geom_line(aes(y = imput_val,col = interaction(rep))) + 
-  facet_wrap(~strain, scales = "free", ncol = 2) + 
-  scale_x_continuous("Time (h)") 
-ggsave("plots/ODvsCS_inoc5_data_nongrowth_togplot_sub.pdf")
-
-
-g1 <- ggplot(data_od_sub_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
-  geom_line(aes(col = interaction(rep))) + 
-  facet_wrap(~strain, ncol = 4) + 
-  scale_x_continuous("Time (h)") + 
-  scale_y_continuous("Non growth only") + 
-  scale_color_discrete("Replicate") + 
-  geom_hline(yintercept = 0)
-
-g2 <- ggplot(data_od_sub_normd_ana, aes(x=Time, group = interaction(exp,rep, strain))) + 
-  geom_line(aes(y = imput_val,col = interaction(rep), linetype = exp)) + 
-  facet_wrap(~strain, scales = "free", ncol = 4) + 
-  scale_x_continuous("Time (h)") + 
-  scale_y_continuous("Normalised measure") + 
-  scale_color_discrete("Experiment and\nreplicate")
-
-g2 / g1 
-ggsave("plots/ODvsCS_inoc5_data_nongrowth_tog_grid_sub.pdf", width = 20)
-
-### Extract characteristics
+### Extract characteristics - not sure needed now / priority. 
 
 ## What are the strains?
 u <- as.character(unique(data_od$strain,stringsasFactors = FALSE)) # strains
@@ -298,14 +307,15 @@ g3 <- ggplot(data_od, aes(x=Time, y = compara, group = interaction(rep, exp, str
   geom_line(aes(col = factor(rep),lty = factor(exp))) + 
   facet_grid(inoc + exp~strain, scales = "free") + 
   scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source")
-ggsave("plots/ODvsCS_data_compare.pdf")
+ggsave("plots/ODvsCS_data_compare.pdf",width = 14)
 
 # Try to plot together? scale by max. Normalise
-data_od <- data_od %>% dplyr::group_by(inoc, strain, rep, exp) %>% dplyr::mutate(max_v = max(compara, na.rm = TRUE),
-                                                                                 compara_norm = compara / max_v)
+max_vals_norm <- data_od %>% filter(strain == "11257") %>% group_by(inoc, rep, exp )%>% summarise(max_norms = max(compara, na.rm = TRUE))
+
+data_od <- left_join(data_od, max_vals_norm) %>% mutate(compara_norm = compara / max_norms)
 
 ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
-  geom_line(aes(col = interaction(exp, rep), lty = exp), lwd = 1) + 
+  geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
   facet_grid(inoc ~strain, scales = "free") + 
   scale_x_continuous("Time (h)") 
 ggsave("plots/ODvsCS_data_compare_norm.pdf")
@@ -345,6 +355,37 @@ g2 <- ggplot(data_od_normd_ana, aes(x=Time, group = interaction(exp,rep, strain)
 
 g2 / g1 
 ggsave("plots/ODvsCS_data_nongrowth_tog_grid.pdf")
+
+### Look at links to inocula
+ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(inoc, rep, strain))) + 
+  geom_line(aes(col = factor(inoc))) + 
+  facet_grid(rep~strain) + 
+  scale_x_continuous("Time (h)") + 
+  scale_y_continuous("Non growth only") + 
+  scale_color_discrete("Replicate") + 
+  geom_hline(yintercept = 0)
+
+max_nongrowth_tab <- data_od_normd_ana %>% group_by(rep, inoc, strain) %>% filter(nongrowth_only == max(nongrowth_only))
+
+ggplot(max_nongrowth_tab, aes(x=inoc, y = nongrowth_only)) + geom_point(aes(col = factor(strain))) + 
+  geom_line(aes(group = interaction(strain, rep), col = factor(strain))) + 
+  scale_y_continuous("Maximum non-growth") + scale_x_continuous("Inoculum")
+ggsave("plots/ODvsCS_inoc_vs_max_nongrowth.pdf")
+
+ggplot(max_nongrowth_tab, aes(x=inoc, y = Time)) + geom_point(aes(col = factor(strain))) + 
+  geom_line(aes(group = interaction(strain, rep), col = factor(strain))) + 
+  scale_y_continuous("Maximum non-growth") + scale_x_continuous("Inoculum")
+ggsave("plots/ODvsCS_inoc_vs_time_max_nongrowth.pdf")
+
+ggplot(max_nongrowth_tab, aes(x=inoc, y = nongrowth_only)) + geom_point(aes(col = factor(strain))) + 
+  geom_smooth(aes(group = interaction(strain), col = factor(strain), fill = factor(strain))) + 
+  scale_y_continuous("Maximum non-growth") + scale_x_continuous("Inoculum")
+ggsave("plots/ODvsCS_inoc_vs_max_nongrowth_smooth.pdf")
+
+ggplot(max_nongrowth_tab, aes(x=inoc, y = Time)) + geom_point(aes(col = factor(strain))) + 
+  geom_smooth(aes(group = interaction(strain), col = factor(strain), fill = factor(strain))) + 
+  scale_y_continuous("Maximum non-growth") + scale_x_continuous("Inoculum")
+ggsave("plots/ODvsCS_inoc_vs_time_max_nongrowth_smooth.pdf")
 
 
 ### Extract characteristics
