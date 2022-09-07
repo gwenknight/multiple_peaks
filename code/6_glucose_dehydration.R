@@ -37,14 +37,14 @@ ggplot(data_dry, aes(x= Time, y = value, group = interaction(rep, glucose_conc, 
   facet_wrap(~glucose) + 
   scale_y_continuous("Heat flow") + 
   scale_color_discrete("Inoculum")
-ggsave("plots/glucose_drying_raw_data.pdf")
+ggsave("plots/glucose_drying_raw_data.png")
 
 # baseline correction looks better? 
 ggplot(data_dry, aes(x= Time, y = value_base, group = interaction(rep, glucose_conc, inoc_name))) + geom_line(aes(colour = factor(inoc))) + 
   facet_wrap(~glucose) + 
   scale_y_continuous("Heat flow") + 
   scale_color_discrete("Inoculum")
-ggsave("plots/glucose_drying_raw_data_base_correct.pdf")
+ggsave("plots/glucose_drying_raw_data_base_correct.png")
 
 
 
@@ -159,7 +159,7 @@ for(i in c("yes", "no")){
   #ggtitle("AUC non-growth output")
   
   g1 + g3 + g5 + g2 + g4 + plot_layout(ncol = 3) + plot_annotation(title = paste0("Baseline correction: ", i))
-  ggsave(paste0("plots/glucose_summary_heatmap_t8hf_",i,".pdf"), width = 12, height = 8)
+  ggsave(paste0("plots/glucose_summary_heatmap_t8hf_",i,".png"), width = 12, height = 8)
   
   #### Plot over glucose concentrations
   param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i)
@@ -170,7 +170,7 @@ for(i in c("yes", "no")){
     scale_color_discrete("Glucose concentration") + 
     scale_x_continuous("Inoculum") + 
     ggtitle(paste0("Baseline correction: ", i))
-  ggsave(paste0("plots/glucose_summary_lines_t8hf_",i,".pdf"))
+  ggsave(paste0("plots/glucose_summary_lines_t8hf_",i,".png"))
   
   ggplot(param_long, aes(x=inoc, y = value, group = interaction(glucose))) + geom_point(aes(col = factor(glucose))) + 
     geom_smooth(aes(col = factor(glucose), fill = factor(glucose)),method='lm', formula= y~x) + 
@@ -178,6 +178,6 @@ for(i in c("yes", "no")){
     scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
     scale_x_continuous("Inoculum") + 
     ggtitle(paste0("Baseline correction: ", i))
-  ggsave(paste0("plots/glucose_summary_smoothed_t8hf_",i,".pdf"))
+  ggsave(paste0("plots/glucose_summary_smoothed_t8hf_",i,".png"))
   
 }
