@@ -194,7 +194,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
             shoulder_point1 = min(time_peaks[1]-1,max(times_line[fpsq]))
             ws <- which(round(ts[,Time],5) == round(shoulder_point1,5)); shoulder_point_v1 <- ts[ws,value]
             height <- shoulder_point_v1 / ts[peaks_index[1],value]
-            if(height > 0.5 && height < 0.96){ # if the shoulder is greater than half way up but not too close
+            if(height > 0.55 && height < 0.96){ # if the shoulder is greater than half way up but not too close
               shoulder_point = shoulder_point1; shoulder_point_v = shoulder_point_v1 # Update shoulder values to ones that are > half way
               odd_shoulder <- 1;# print(c("new",i)) # Then odd shoulder  
             }
@@ -304,7 +304,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
               ws <- which.min(abs(unlist(ts[,Time]) - shoulder_point1_past)) ## instead of which(round(ts[,Time],5) == round(shoulder_point1_past,5)); 
               shoulder_point_v1_past <- ts[ws,value]
               height <- shoulder_point_v1_past / ts[peaks_index[1],value]
-              if(height > 0.55 && height < 0.99){ # if the shoulder is greater than 51% up but not too close
+              if(height > 0.55 && height < 0.96){ # if the shoulder is greater than 55% up but not too close
                 shoulder_point_past = shoulder_point1_past; shoulder_point_v_past = shoulder_point_v1_past# Update shoulder values to ones that are > half way
                 odd_shoulder_past <- 1; #print(c("new",i)) # Then odd shoulder  
                 shoulder_point_past_keep = min(shoulder_point_past_keep, shoulder_point_past) # keep the earliest
@@ -677,7 +677,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       sub_ts[which(sub_ts$strain %in% unlist(peaks_normal)), "cluster"] = "normal"
       sub_parm[which(sub_parm$strain %in% unlist(peaks_normal)), "cluster"] = "normal"
       
-      ####**** (Cluster 3) Some have a single rep that is a "peak" and then rest are "shoulders" => basically multiple peaks
+      ####**** (Cluster 3) Some have a single rep that is a "peak" and then rest are "shoulders" => basically multiple peaks = spike
       spiked_analysis <- as.data.frame(sub_parm %>% mutate(odd_spike = odd_peaks + odd_shoulder) %>% filter(odd_spike > 0) %>% group_by(strain) %>% mutate(n_spike = n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), spiked_analysis[,c("strain","rep","n_spike")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spike))) + facet_wrap(~strain)+ 
@@ -732,8 +732,8 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       nd <- left_join(as.data.frame(sub_ts %>% filter(cluster =="")), odd_normal_peak_curves_analysis[,c("strain","rep","odd","odd_label")], by = c("strain", "rep"))
       if(dim(nd)[1]!=0){
         g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(odd_label))) + facet_wrap(~strain) + 
-        scale_color_discrete("peak / width / shoulder / shoulder past")
-      ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_not_clustered.pdf"))
+          scale_color_discrete("peak / width / shoulder / shoulder past")
+        ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_not_clustered.pdf"))
       }
       
       # Wide assign to shoulder past - analysis of 0t / 5inoc suggest most had one past shoulder / one wide and often wide == really past shoulder
@@ -771,3 +771,167 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
   return(list(ts = ts_end, parameters = parameters_end))
 }
 
+
+
+
+##### Function to explore, normalise and extract non-growth output from OD vs CS data comparison 
+data_exploration_od_cs <- function(datae, inoc_name, normal_strain = "11257"){
+  # datae = time series to explore
+  # inoc_name = which inoculum is being explored
+  # normal_strain = strain which has the normal curve - take max of this for the normalisation 
+  
+  # remove all data before the time point that they all have which is the max of the minimum times to avoid odd completion curves prior to start and after
+  cutoff_time_dn = max(datae %>% dplyr::group_by(rep, exp, inoc) %>% dplyr::summarise(minn = min(Time)) %>% ungroup() %>% dplyr::select(minn))
+  cutoff_time_up = min(datae %>% dplyr::group_by(rep, exp, inoc) %>% dplyr::summarise(maxx = max(Time)) %>% ungroup() %>% dplyr::select(maxx))
+  
+  # Plot raw data
+  ggplot(datae, aes(x=Time, y = value, group = interaction(inoc, exp, strain, rep))) + geom_line(aes(col = factor(rep))) + 
+    facet_grid(exp~strain, scales = "free")
+  ggsave(paste0("plots/ODvsC2_", inoc_name,"_rawdata.pdf"))
+  
+  data_od <- datae %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up) %>% 
+    dplyr::select(Time, rep, exp, value, strain, inoc) %>% 
+    filter(inoc == 5) %>% # only 10^5 for this analysis
+    group_by(rep, exp, strain) %>%
+    mutate(ma_value = zoo::rollapply(value, 5, mean,fill = NA),
+           differ = c(0,diff(ma_value)),
+           compara = ifelse(exp == "CS", value, differ)) %>%
+    ungroup() 
+  
+  g2 <- ggplot(data_od, aes(x=Time, y = ma_value, group = interaction(rep, exp, strain))) + 
+    geom_line(aes(col = factor(rep))) + 
+    facet_grid(exp~strain,scales = "free") + 
+    scale_x_continuous("Time (h)") 
+  ggsave(paste0("plots/ODvsCS_", inoc_name,"_data_smoothed.pdf"))
+  
+  g3a <- ggplot(data_od, aes(x=Time, y = compara, group = interaction(rep, exp, strain))) + 
+    geom_line(aes(col = factor(rep))) + 
+    facet_grid(exp~strain, scales = "free") + 
+    scale_x_continuous("Time (h)") + 
+    scale_y_continuous("Raw data") + 
+    scale_color_discrete("Replicate")
+  ggsave(paste0("plots/ODvsCS_",inoc_name,"_data_compare.pdf"))
+  
+  
+  ##### Normalisation 
+  # Try to plot together? Need to normalise... 
+  ## First tried scale by max. Normalise - but then don't get comparison between strains
+  # data_od <- data_od %>% group_by(strain, rep, exp) %>% mutate(max_v = max(compara, na.rm = TRUE),
+  #                                                              compara_norm = compara / max_v)
+  
+  # Second find strain that is normal - divide by max of that then subtract
+  #strains <- c("11016","11051", "11210", "11257")
+  #clusters <- c("spike", "double", "spike", "normal") # categorizations from 2_cluster.R 
+  
+  max_vals_norm <- data_od %>% filter(strain == normal_strain) %>% group_by(rep, exp )%>% summarise(max_norms = max(compara, na.rm = TRUE))
+  
+  data_od <- left_join(data_od, max_vals_norm) %>% mutate(compara_norm = compara / max_norms)
+  
+  ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
+    geom_line(aes(col = factor(rep), lty = exp), lwd = 1) + 
+    facet_wrap(~strain, scales = "free", ncol = 2) + 
+    scale_x_continuous("Time (h)") + 
+    scale_color_discrete("Replicate") + 
+    scale_linetype("Data")
+  ggsave(paste0("plots/ODvsCS_",inoc_name,"_data_compare_norm.pdf"))
+  
+  ##### Difference in output 
+  # Subtract normalised data? Need to complete: measured at different time points
+  data_od_normd <- data_od %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up) %>% # make sure cover same time for all 
+    complete(rep, strain, exp, Time) %>% mutate(compara_norm_inp = na_ma(compara_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
+    group_by(strain, rep, exp) %>% dplyr::select(Time, strain,rep, exp, compara_norm_inp) %>% # Take imputed values
+    pivot_wider(id_cols = c(strain, Time, rep), names_from = exp, values_from = compara_norm_inp) %>% mutate(nongrowth_only = CS - OD) %>% # look for difference between OD and heat output
+    pivot_longer(cols = c("CS","OD"), names_to = "exp", values_to ="imput_val")
+  
+  data_od_normd_ana <- left_join(data_od, data_od_normd)
+  
+  ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(exp,rep, strain))) + 
+    geom_line(aes(col = factor(rep)), lwd = 1) + 
+    geom_line(aes(y = imput_val,col = interaction(rep))) + 
+    facet_wrap(~strain, scales = "free", ncol = 2) + 
+    scale_x_continuous("Time (h)") 
+  ggsave(paste0("plots/ODvsCS_",inoc_name,"_data_nongrowth_togplot.pdf"))
+  
+  g1 <- ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
+    geom_line(aes(col = interaction(rep))) + 
+    facet_wrap(~strain, ncol = 4) + 
+    scale_x_continuous("Time (h)") + 
+    scale_y_continuous("Non growth only") + 
+    scale_color_discrete("Replicate") + 
+    geom_hline(yintercept = c(0,0.5), alpha = 0.2) #+ 
+  #geom_vline(xintercept = c(25000,30000))
+  
+  g2 <- ggplot(data_od_normd_ana, aes(x=Time, group = interaction(exp,rep, strain))) + 
+    geom_line(aes(y = imput_val,col = interaction(rep), linetype = exp)) + 
+    facet_wrap(~strain, ncol = 4) + 
+    scale_x_continuous("Time (h)") + 
+    scale_y_continuous("Normalised measure") + 
+    scale_color_discrete("Data type and\nreplicate") + 
+    scale_linetype("Data type")
+  
+  g3a / g2 / g1 
+  ggsave(paste0("plots/ODvsCS_",inoc_name,"_data_nongrowth_tog_grid.pdf"), width = 20, height = 20)
+  
+}
+
+
+#### Simple data extraction for non-heat curves
+
+charac_extract <- function(ts, Time, value, ts_orig_1, ts_orig_2, value_orig, name4output){
+  ## ts = timeseries
+  ## Time = name of time column
+  ## value = name of value column
+  ## name4output = strain, replicate, condition, inocl = labels for output
+  
+  ## (1) Fit spline
+  ## This gives lag time and exponential growth rate cumulative
+  gc_fit <- gcFitSpline(ts[,Time], ts[,value])
+  # parameters from this fit
+  s <- summary(gc_fit)
+  
+  ## (2) What is the maximum heat flow and when?
+  wmax <- which.max( unlist(ts[,value])[-c(1:6)]) + 6 # take off funny initial behaviour < 2hr (take off in which.max and then add on 6 for position as taken 6 off)
+  time_max_heat_flow <- as.numeric(ts[wmax,Time])
+  value_max_heat_flow <- as.numeric(ts[wmax,value])
+  
+  ## (3) What is the minimum heat flow and when?
+  wmin <- which.min( unlist(ts[,value])[-c(1:6)]) + 6 # take off funny initial behaviour < 2hr (take off in which.min and then add on 6 for position as taken 6 off)
+  time_min_heat_flow <- as.numeric(ts[wmin,Time])
+  value_min_heat_flow <- as.numeric(ts[wmin,value])
+  
+  ## (4) AUC - calculate original and then subtract for non-growth heat
+  ## Orig 1
+  gc_fit <- gcFitSpline(ts_orig_1[,Time], ts_orig_1[,value_orig])
+  # parameters from this fit
+  s1 <- summary(gc_fit)
+  
+  # From lag time to 10 hrs after
+  lag_time <- as.numeric(which.min(abs(unlist(ts_orig_1[,Time]) - s1$lambda.spline)))
+  ten_after = ifelse(max(ts_orig_1[,Time])<100,10,10*60*60) # units in current data either hours or seconds (latter is 10 hrs of seconds)
+  ten_after_lag = as.numeric(which.min(abs(unlist(ts_orig_1[,Time]) - (s1$lambda.spline + ten_after))))
+  gc_fit_auc <- gcFitSpline(ts_orig_1[c(lag_time:ten_after_lag),Time], ts_orig_1[c(lag_time:ten_after_lag),value_orig])
+  # parameters from this fit
+  s_auc_1 <- summary(gc_fit_auc)
+  
+  ## Orig 2
+  if(sum(ts_orig_2[,value_orig])!=0){
+    gc_fit <- gcFitSpline(ts_orig_2[,Time], ts_orig_2[,value_orig])
+    # parameters from this fit
+    s2 <- summary(gc_fit)
+    
+    # From lag time to 10 hrs after
+    lag_time <- as.numeric(which.min(abs(unlist(ts_orig_2[,Time]) - s2$lambda.spline)))
+    ten_after = ifelse(max(ts_orig_2[,Time])<100,10,10*60*60) # units in current data either hours or seconds (latter is 10 hrs of seconds)
+    ten_after_lag = as.numeric(which.min(abs(unlist(ts_orig_2[,Time]) - (s2$lambda.spline + ten_after))))
+    gc_fit_auc <- gcFitSpline(ts_orig_2[c(lag_time:ten_after_lag),Time], ts_orig_2[c(lag_time:ten_after_lag),value_orig])
+    # parameters from this fit
+    s_auc_2 <- summary(gc_fit_auc)
+    
+    ### Auc non-growth 
+    s_auc <- s_auc_2$integral.spline - s_auc_1$integral.spline}else{s_auc <- s_auc_1$integral.spline} # if running on just heat flow then second dataset = 0
+  
+  ### Simple parameter extract 
+  para_simple <- c(time_max_heat_flow, value_max_heat_flow, time_min_heat_flow, value_min_heat_flow, s_auc, s$lambda.spline)
+  
+  return(para_simple)
+}

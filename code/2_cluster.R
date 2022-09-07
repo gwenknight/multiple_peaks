@@ -1,4 +1,5 @@
 #### Clustering
+# Clusters data and makes output of strain distribution in each cluster
 
 ###******* LOAD UP LIBRARIES AND DATA NEEDED *************#############################################################
 ## libraries needed
@@ -15,6 +16,8 @@ library(RColorBrewer)
 library(here)
 library(patchwork)
 library(ggpubr)
+library(viridis)
+library(gridExtra)
 
 theme_set(theme_bw(base_size=12)) # theme setting for plots: black and white (bw) and font size (24)
 mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(14)
@@ -41,29 +44,66 @@ param$inoc <- param$inocl
 strains_in <- as.numeric(unlist(param %>% summarise(unique(strain))))
 ddm <- ddm %>% filter(strain %in% strains_in)
 
-##### Cluster
-c <- cluster(ddm, param)
 
+########## ************************************************************************************************ #########################
+##### Clustering #######
+c <- cluster(ddm, param)
+########## ************************************************************************************************ #########################
+
+### Store output of clustering
 write.csv(c$parameters,"output/clustered_parameters.csv")
 write.csv(c$ts,"output/clustered_time_series.csv")
 
 
-#### Cluster on latently corrected data
-## Correct for latent period 
-# removed lag time
-ddm_latent <- left_join(ddm, param[,c("strain", "rep", "lag")], by = c("strain", "rep"))
-ddm_latent$value_latent_correct <- ddm_latent$Time - as.numeric(ddm_latent$lag) 
-ddm_latent <- ddm_latent %>% filter(value_latent_correct > 0)
-# set to zero at lag time
-ddm_latent <- ddm_latent %>% group_by(rep, inoc, drytime, strain) %>% mutate(initial_time = min(Time),
-                                                                             initial_val_f = ifelse(Time == initial_time, value_J, 0),
-                                                                             initial_val = max(initial_val_f),
-                                                               value_adj_latent = value - initial_val, 
-                                                               time_adj_latent = Time - initial_time)
-ggplot(ddm_latent %>% filter(inoc == 5, drytime == 0) %>% ungroup() %>% arrange(desc(cluster)), aes(x=time_adj_latent, y = value_adj_latent, group = interaction(strain,rep))) + 
-  geom_line(aes(col = factor(cluster))) + 
-  facet_grid(cluster~.)
-ggsave("plots/inoc_5_clustered_rows_correct_latent.pdf")
+###### FIGURE: e.g.s of clusters
+cluster_types <- unique(c$ts$cluster)
+for(i in cluster_types){
+  ggplot(c$ts %>% filter(cluster == i, inoc == 5, drytime == 0), aes(x=Time, y = value_J, group = interaction(strain, rep))) + 
+    geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate")
+  ggsave(paste0("plots/ALL_10_5_",i,".pdf"))
+}
+
+## Normal ## Strain 11001 - take first one
+## Double ## Strain 1040 - clear double peaks
+## Post shoulder ## Strain 11073 - rep 2
+## Spike ## Strain 11210 - all 
+## Wide ## 11106
+# Example strains 
+eg_cluster_strains = c$ts %>% filter(strain %in% c("11001", "11040", "11073", "11210","11106"), inoc == 5, drytime == 0)
+ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) + 
+  geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") + 
+  scale_x_continuous(lim = c(0,20)) + 
+  geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2)
+ggsave("plots/Example_each_cluster_strain_type.pdf")
 
 
+#### TABLE: number of strains in each cluster
+### CHECK: that unique cluster per strain:
+#c$parameters %>% dplyr::select(inocl, cluster, strain, drytime) %>% group_by(inocl, strain, drytime) %>% summarise(u = unique(cluster)) %>% group_by(inocl, strain, drytime) %>% summarise(n = n()) %>% filter( n > 1) 
+## None have more than one cluster per strain and inoculum in each drytime
+
+#length(unique(c$parameters$strain)) ### CHECK: 97 strains
+
+gf1 <- c$parameters %>% filter(drytime == 0) %>% dplyr::select(inocl, cluster, strain) %>% 
+  group_by(inocl, strain) %>% summarise(u = unique(cluster)) %>% group_by(inocl, u) %>% dplyr::summarise(n=n())
+# Add in unclustered name
+w<-which(gf1$u == "")
+gf1[w,"u"] <- "unclustered"
+
+table_cluster_distribution <- gf1 %>% pivot_wider(names_from = u, values_from = n, values_fill = 0)
+rowSums(table_cluster_distribution) # CHECK: 97 strains + inocl column = 100/101/102
+names(table_cluster_distribution) <- c("Inoculum", "Unclustered","Double","Normal","Post shoulder","Spike","Wide")
+rownames(table_cluster_distribution) <- NULL
+
+pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
+grid.table(table_cluster_distribution)
+dev.off()
+
+
+#### FIGURE: Patterns across inoc
+gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
+ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
+  scale_x_discrete("Cluster type") + 
+  scale_y_continuous("Inoculum size") 
+ggsave("plots/heatmap_cluster_by_inoculum.pdf")
 
