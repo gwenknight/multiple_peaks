@@ -75,6 +75,9 @@ cluster_data_summ <- cluster_data %>% group_by(drytime, inocl, cluster, name, .d
 
 
 ### STORY PIC
+my_comparisons <- list( c("post_shoulder", "double"), c("double", "normal"), c("normal", "post_shoulder"),c("normal","spike"),c("spike","wide"),
+                        c("double","spike"),c("double","wide"))
+
 g <- ggplot(cluster_data %>% filter(drytime ==0, inocl == 5) %>% filter(name %in% c("auc", "valpeak","exp_gr","second_peak_h")) %>% 
               mutate(across(name, factor, levels=c("auc", "valpeak","exp_gr","second_peak_h"))), aes(x = cluster, y = value)) + 
   geom_boxplot(aes(fill = cluster)) +  facet_wrap(~name,ncol = 4, scales = "free") 
@@ -125,9 +128,6 @@ ggplot(cluster_data_summ %>% filter(name %in% c("valpeak","auc","timepeak"), clu
   facet_grid(name ~ drytime, scales = "free") + scale_fill_discrete("Inoculum") 
 ggsave("plots/ana_auc&val&timepeak_norm_double.pdf")
 
-my_comparisons <- list( c("post_shoulder", "double"), c("double", "normal"), c("normal", "post_shoulder"),c("normal","spike"),c("spike","wide"),
-                        c("double","spike"),c("double","wide"))
-
 ggplot(cluster_data_summ , aes(x = cluster, y = mean, fill = factor(inocl))) + 
   geom_bar(stat="identity", color="black", position=position_dodge())+
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, position=position_dodge(.9)) + 
@@ -173,3 +173,4 @@ ggsave("plots/inoc_5_not_double_with2nd_peak.pdf")
 g <- ggplot(cluster_data%>% filter(drytime ==0, inocl == 5), aes(x = cluster, y = value)) + geom_boxplot(aes(fill = name)) +  facet_wrap(~name, scales = "free") + 
   stat_compare_means(comparisons = my_comparisons)
 ggsave("plots/inoc_5_clusters_boxplot.pdf")
+
