@@ -13,6 +13,10 @@ data0 <- read_csv("data/glucose_HF.csv")
 data_dry <- data1
 data_dry$value_base <- data2$value
 
+# data_dry <- data2
+# data_dry$value_base <- data1$value
+
+
 ### Raw data
 ggplot(data_dry, aes(x= Time, y = value, group = interaction(rep, glucose_conc, inoc_name))) + geom_line(aes(colour = factor(inoc))) + 
   facet_wrap(~glucose) + 

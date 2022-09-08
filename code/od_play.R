@@ -466,7 +466,7 @@ dim(param)
 
 ## Store so don't have to run above
 write.csv(param, "output/param_od_allinoc.csv")
-#param <- read_csv("output/param_od.csv")[,-1]
+param <- read_csv("output/param_od.csv")[,-1]
 
 ### look at OD vs CS
 param_wide_timepeak <- param %>% pivot_wider(id_cols = c(strain, rep),names_from = experiment, values_from = c(timepeak))
