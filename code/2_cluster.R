@@ -54,6 +54,11 @@ c <- cluster(ddm, param)
 write.csv(c$parameters,"output/clustered_parameters.csv")
 write.csv(c$ts,"output/clustered_time_series.csv")
 
+## Read in if doing later
+# c <- c()
+# c$parameters <- read_csv("output/clustered_parameters.csv")
+# c$ts <- read.csv("output/clustered_time_series.csv")
+
 
 ###### FIGURE: e.g.s of clusters
 cluster_types <- unique(c$ts$cluster)
@@ -99,6 +104,16 @@ pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
 grid.table(table_cluster_distribution)
 dev.off()
 
+### Table with how they change across inoculum 
+table_changes <- c$parameters %>% ungroup() %>% dplyr::select(strain, rep, drytime, inocl, cluster) %>% 
+  pivot_wider(names_from = inocl, values_from = cluster)
+write.csv(table_changes, "output/table_changes_cluster_over_inoc.csv")
+
+colnames(table_changes) <- c("strain", "rep", "drytime", "five", "four", "three")
+t_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
+                         fourtothree = ifelse(four == three,0,1),
+                         difference = fivetofour + fourtothree) %>% filter(difference > 0)
+write.csv(t_changes, "output/table_changes_cluster_over_inoc_with_differences.csv")
 
 #### FIGURE: Patterns across inoc
 gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
