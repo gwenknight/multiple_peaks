@@ -115,6 +115,31 @@ t_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
                          difference = fivetofour + fourtothree) %>% filter(difference > 0)
 write.csv(t_changes, "output/table_changes_cluster_over_inoc_with_differences.csv")
 
+tt_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
+                                      fourtothree = ifelse(four == three,0,1),
+                                      fivetothree = ifelse(five == three,0,1),
+                                      difference = fivetofour + fourtothree + fivetothree) #%>% filter(difference > 0)
+write.csv(tt_changes, "output/tt_changes_cluster_over_inoc_with_more_differences.csv")
+#write.csv2(tt_changes, "output/table_changes_cluster_over_inoc_with_more_differences.csv")
+
+td_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
+                                       fourtothree = ifelse(four == three,0,1),
+                                       fivetothree = ifelse(five == three,0,1),
+                                       difference = fivetofour + fourtothree + fivetothree) %>% filter(difference > 0)
+dim(td_changes) #259 x 10
+td_changes <- td_changes %>%  filter(drytime == 0) # 129 x 10
+td_changes <- td_changes[!td_changes$five == "",] # 124 x 10
+td_changes <- td_changes[!td_changes$three == "",] # 118 x 10
+
+write.csv(td_changes, "output/td_changes_cluster_over_inoc_with_more_differences.csv")
+
+unique(td_changes$five)
+unique(td_changes$three)
+unique(td_changes[, c("five", "three")]) # 15 unique combinations of clusters between five and three
+
+count_td_changes <- dplyr::count_(td_changes, vars = c('five','three'))
+write.csv(count_td_changes, "output/count_td_changes.csv")
+
 #### FIGURE: Patterns across inoc
 gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
 ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
