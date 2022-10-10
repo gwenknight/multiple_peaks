@@ -75,12 +75,18 @@ for(i in cluster_types){
 ## Wide ## 11106
 # Example strains 
 eg_cluster_strains = c$ts %>% filter(strain %in% c("11001", "11040", "11073", "11210","11106"), inoc == 5, drytime == 0)
-ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) + 
-  geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") + 
-  scale_x_continuous(lim = c(0,20)) + 
+ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) +
+  geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") +
+  scale_x_continuous(lim = c(0,20)) +
   geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2)
 ggsave("plots/Example_each_cluster_strain_type.pdf")
-
+# ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) + 
+#   geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") + 
+#   scale_x_continuous("Time (h)", minor_breaks = seq(0, 20, 5), lim = c(0,20)) + 
+#   scale_y_continuous(expression(paste("Heatflow (mW)")), limits = c(-0.005, 0.1), breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.10)) +
+#   geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2, hjust = 0.35)
+# ggsave("plots/final/figure1.png", width = 8, height = 6)
+# ggsave("plots/final/figure1.tiff", width = 8, height = 6, dpi = 600)
 
 #### TABLE: number of strains in each cluster
 ### CHECK: that unique cluster per strain:
@@ -147,3 +153,8 @@ ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=
   scale_y_continuous("Inoculum size") 
 ggsave("plots/heatmap_cluster_by_inoculum.pdf")
 
+# ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
+#   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) + 
+#   scale_y_continuous("Inoculum size") 
+# ggsave("plots/final/figure2.png", width = 8, height = 4)
+# ggsave("plots/final/figure2.tiff", width = 8, height = 6, dpi = 600)
