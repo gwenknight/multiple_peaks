@@ -118,6 +118,9 @@ rownames(table_cluster_distribution) <- NULL
 pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
 grid.table(table_cluster_distribution)
 dev.off()
+# png("plots/final/table_cluster_distribution.png", height=2, width=7, units = "in", res = 72)
+# grid.table(table_cluster_distribution)
+# dev.off()
 
 ### Table with how they change across inoculum 
 table_changes <- c$parameters %>% ungroup() %>% dplyr::select(strain, rep, drytime, inocl, cluster) %>% 
