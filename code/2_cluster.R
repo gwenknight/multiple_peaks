@@ -47,7 +47,7 @@ ddm <- ddm %>% filter(strain %in% strains_in)
 
 ########## ************************************************************************************************ #########################
 ##### Clustering #######
-c <- cluster(ddm, param)
+c <- cluster(ddm, param) #ddm 97 strains but param 105 strains
 ########## ************************************************************************************************ #########################
 
 ### Store output of clustering
@@ -75,24 +75,35 @@ for(i in cluster_types){
 ## Wide ## 11106
 # Example strains 
 eg_cluster_strains = c$ts %>% filter(strain %in% c("11001", "11040", "11073", "11210","11106"), inoc == 5, drytime == 0)
-ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) + 
-  geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") + 
-  scale_x_continuous(lim = c(0,20)) + 
+ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) +
+  geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") +
+  scale_x_continuous(lim = c(0,20)) +
   geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2)
 ggsave("plots/Example_each_cluster_strain_type.pdf")
-
+# ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) +
+#   geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") +
+#   scale_x_continuous("Time (h)", minor_breaks = seq(0, 20, 5), lim = c(0,20)) +
+#   scale_y_continuous(expression(paste("Heatflow (mW)")), limits = c(-0.005, 0.1), breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.10)) +
+#   geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2, hjust = 0.35)
+# ggsave("plots/final/figure1.png", width = 8, height = 6)
+# ggsave("plots/final/figure1.tiff", width = 8, height = 6, dpi = 600)
 
 #### TABLE: number of strains in each cluster
 ### CHECK: that unique cluster per strain:
 #c$parameters %>% dplyr::select(inocl, cluster, strain, drytime) %>% group_by(inocl, strain, drytime) %>% summarise(u = unique(cluster)) %>% group_by(inocl, strain, drytime) %>% summarise(n = n()) %>% filter( n > 1) 
 ## None have more than one cluster per strain and inoculum in each drytime
 
-#length(unique(c$parameters$strain)) ### CHECK: 97 strains
+#length(unique(c$parameters$strain)) ### CHECK: 97 strains. Val?rie: 105 strains
 
 
-gf1 <- c$parameters %>% filter(!strain %in% c("Newman","RWW12","SA3297","SA2704","RWW146","SAC042W", "Mu50", "M116"),
-                               drytime == 0) %>% dplyr::select(inocl, cluster, strain) %>% 
+# gf1 <- c$parameters %>% filter(drytime == 0) %>% dplyr::select(inocl, cluster, strain) %>% 
+#   group_by(inocl, strain) %>% summarise(u = unique(cluster)) %>% group_by(inocl, u) %>% dplyr::summarise(n=n())
+gf1 <- c$parameters %>% 
+  filter(drytime == 0) %>% 
+  filter(!(strain %in% c("Newman", "RWW12", "SA3297", "SA2704", "RWW146", "SAC042W", "Mu50", "M116"))) %>%
+  dplyr::select(inocl, cluster, strain) %>% 
   group_by(inocl, strain) %>% summarise(u = unique(cluster)) %>% group_by(inocl, u) %>% dplyr::summarise(n=n())
+# length(unique(gf1$strain)) # CHECK now 97 strains
 # Add in unclustered name
 w<-which(gf1$u == "")
 gf1[w,"u"] <- "unclustered"
@@ -119,6 +130,31 @@ t_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
                          difference = fivetofour + fourtothree) %>% filter(difference > 0)
 write.csv(t_changes, "output/table_changes_cluster_over_inoc_with_differences.csv")
 
+tt_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
+                                      fourtothree = ifelse(four == three,0,1),
+                                      fivetothree = ifelse(five == three,0,1),
+                                      difference = fivetofour + fourtothree + fivetothree) #%>% filter(difference > 0)
+write.csv(tt_changes, "output/tt_changes_cluster_over_inoc_with_more_differences.csv")
+#write.csv2(tt_changes, "output/table_changes_cluster_over_inoc_with_more_differences.csv")
+
+td_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
+                                       fourtothree = ifelse(four == three,0,1),
+                                       fivetothree = ifelse(five == three,0,1),
+                                       difference = fivetofour + fourtothree + fivetothree) %>% filter(difference > 0)
+dim(td_changes) #259 x 10
+td_changes <- td_changes %>%  filter(drytime == 0) # 129 x 10
+td_changes <- td_changes[!td_changes$five == "",] # 124 x 10
+td_changes <- td_changes[!td_changes$three == "",] # 118 x 10
+
+write.csv(td_changes, "output/td_changes_cluster_over_inoc_with_more_differences.csv")
+
+unique(td_changes$five)
+unique(td_changes$three)
+unique(td_changes[, c("five", "three")]) # 15 unique combinations of clusters between five and three
+
+count_td_changes <- dplyr::count_(td_changes, vars = c('five','three'))
+write.csv(count_td_changes, "output/count_td_changes.csv")
+
 #### FIGURE: Patterns across inoc
 gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
 ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
@@ -126,3 +162,8 @@ ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=
   scale_y_continuous("Inoculum size") 
 ggsave("plots/heatmap_cluster_by_inoculum.pdf")
 
+# ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") +
+#   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
+#   scale_y_continuous("Inoculum size")
+# ggsave("plots/final/figure2.png", width = 8, height = 4)
+# ggsave("plots/final/figure2.tiff", width = 8, height = 6, dpi = 600)
