@@ -55,9 +55,9 @@ write.csv(c$parameters,"output/clustered_parameters.csv")
 write.csv(c$ts,"output/clustered_time_series.csv")
 
 ## Read in if doing later
-# c <- c()
-# c$parameters <- read_csv("output/clustered_parameters.csv")
-# c$ts <- read.csv("output/clustered_time_series.csv")
+c <- c()
+c$parameters <- read_csv("output/clustered_parameters.csv")
+c$ts <- read.csv("output/clustered_time_series.csv")
 
 
 ###### FIGURE: e.g.s of clusters
@@ -89,15 +89,19 @@ ggsave("plots/Example_each_cluster_strain_type.pdf")
 
 #length(unique(c$parameters$strain)) ### CHECK: 97 strains
 
-gf1 <- c$parameters %>% filter(drytime == 0) %>% dplyr::select(inocl, cluster, strain) %>% 
+
+gf1 <- c$parameters %>% filter(!strain %in% c("Newman","RWW12","SA3297","SA2704","RWW146","SAC042W", "Mu50", "M116"),
+                               drytime == 0) %>% dplyr::select(inocl, cluster, strain) %>% 
   group_by(inocl, strain) %>% summarise(u = unique(cluster)) %>% group_by(inocl, u) %>% dplyr::summarise(n=n())
 # Add in unclustered name
 w<-which(gf1$u == "")
 gf1[w,"u"] <- "unclustered"
 
-table_cluster_distribution <- gf1 %>% pivot_wider(names_from = u, values_from = n, values_fill = 0)
+table_cluster_distribution <- gf1 %>% pivot_wider(names_from = u, values_from = n, values_fill = 0) %>% arrange(desc(inocl))
 rowSums(table_cluster_distribution) # CHECK: 97 strains + inocl column = 100/101/102
-names(table_cluster_distribution) <- c("Inoculum", "Unclustered","Double","Normal","Post shoulder","Spike","Wide")
+table_cluster_distribution <- rename(table_cluster_distribution, Inoculum = inocl, Double = double, 
+                                     Normal = normal, Spike = spike, Wide = wide, Postshoulder = post_shoulder, Unclustered = "NA")
+table_cluster_distribution <- table_cluster_distribution[,c("Inoculum","Normal","Double", "Spike","Postshoulder","Wide", "Unclustered")]
 rownames(table_cluster_distribution) <- NULL
 
 pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
@@ -118,7 +122,7 @@ write.csv(t_changes, "output/table_changes_cluster_over_inoc_with_differences.cs
 #### FIGURE: Patterns across inoc
 gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
 ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
-  scale_x_discrete("Cluster type") + 
+  scale_x_discrete("Cluster type", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) + 
   scale_y_continuous("Inoculum size") 
 ggsave("plots/heatmap_cluster_by_inoculum.pdf")
 
