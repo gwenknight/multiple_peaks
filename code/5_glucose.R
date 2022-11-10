@@ -95,7 +95,8 @@ ggsave("plots/glucose_od_basic.pdf")
 
 
 ###### Heat flow 
-hf <- read.csv("data/glucose_HF.csv")[,-1]
+#hf <- read.csv("data/glucose_HF.csv")[,-1] # time 0 data with baseline correction
+hf <- read_csv("data/glucose_HF_noBC.csv")[,-1] # time 0 data without baseline correction
 
 # remove un-needed columns
 hf <- hf %>% dplyr::select(-c("glucose_conc","inoc_name","variable","baseline"))
@@ -103,6 +104,7 @@ hf <- hf %>% dplyr::select(-c("glucose_conc","inoc_name","variable","baseline"))
 w1<-which(hf$rep == "x")
 w2<-which(hf$rep == "xi")
 w3<-which(hf$rep == "xii")
+hf$rep <- as.numeric(hf$rep)
 hf[w1,"rep"] <- 1
 hf[w2,"rep"] <- 2
 hf[w3,"rep"] <- 3

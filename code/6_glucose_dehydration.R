@@ -21,6 +21,7 @@ theme_set(theme_bw(base_size=14)) # theme setting for plots: black and white (bw
 mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(14)
 
 setwd(here::here())
+source("code/functions_for_heat_curves_additional_double_peak.R")
 
 # 11016 data
 # Only HF
@@ -189,5 +190,24 @@ for(i in c("yes", "no")){
       scale_x_continuous("Inoculum") + 
       ggtitle(paste0("Baseline correction: ", i, " Drytime: ",j))
     ggsave(paste0("plots/glucose_summary_smoothed_hf_",i,j,".png"))
+    
+    ggplot(param_long, aes(x=inoc, y = value, group = interaction(inoc,glucose))) + geom_boxplot(aes(col = factor(glucose))) + 
+      facet_wrap(~name, scales = "free") + 
+      scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+      scale_x_continuous("Inoculum") + 
+      ggtitle(paste0("Baseline correction: ", i, " Drytime: ",j))
+    ggsave(paste0("plots/glucose_summary_boxplot_",i,j,".png"))
   }
 }
+
+
+########## ************************************************************************************************ #########################
+data_hf <- rbind(data1, data2, data01, data02) # on top of each other instead of alongside
+param <- read_csv("output/simple_extract_glucose_allinoc_hf.csv")[,-1]
+##### Clustering #######
+c0 <- cluster(data_hf %>% filter(glucose == 0) %>% mutate(), param %>% filter(glucose == 0)) #ddm 97 strains but param 105 strains
+########## ************************************************************************************************ #########################
+
+### Store output of clustering
+write.csv(c$parameters,"output/clustered_parameters.csv")
+write.csv(c$ts,"output/clustered_time_series.csv")

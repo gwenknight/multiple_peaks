@@ -44,12 +44,6 @@ ggplot(data_od_orig, aes(x=Time, y = value, group = interaction(inoc, exp, strai
   facet_grid(exp~strain, scales = "free")
 ggsave("plots/ODvsCS_rawdata.pdf")
 
-#######################********** 10^5 ****************##############################################################################################################################################################
-#### JUST DO FOR 10^5 to start! 
-############################################################################################################################################################################################################################
-
-#### Explore data and extract 
-data_exploration_od_cs(data_od_orig %>% filter(inoc == 5), "inoc5")
 
 
 #######################********** ALL ****************##############################################################################################################################################################
@@ -128,6 +122,35 @@ g2 <- ggplot(data_od_normd_ana, aes(x=Time, group = interaction(exp,rep, strain)
 
 g2 / g1 
 ggsave("plots/ODvsCS_data_nongrowth_tog_grid.pdf")
+
+#######################********** 10^5 ****************##############################################################################################################################################################
+#### JUST DO FOR 10^5 to start! 
+############################################################################################################################################################################################################################
+
+#### Explore data and extract 
+data_exploration_od_cs(data_od_orig %>% filter(inoc == 5), "inoc5")
+
+g1 <- ggplot(data_od %>% filter(inoc == 5), aes(x=Time, y = compara, group = interaction(rep, exp, strain))) + 
+  geom_line(aes(col = factor(rep),lty = factor(exp))) + 
+  facet_grid(exp~strain, scales = "free") + 
+  scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source") + 
+  scale_y_continuous("Raw data")
+
+g2 <- ggplot(data_od %>% filter(inoc == 5), aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
+  geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
+  facet_grid(~strain, scales = "free") + 
+  scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source") 
+
+g3 <- ggplot(data_od_normd_ana %>% filter(inoc == 5), aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
+  geom_line(aes(col = interaction(rep))) + 
+  facet_grid(~strain) + 
+  scale_x_continuous("Time (h)") + 
+  scale_y_continuous("Non growth only") + 
+  scale_color_discrete("Replicate") + 
+  geom_hline(yintercept = 0)
+
+g1/g2/g3
+ggsave("plots/fig4.tiff") #### TO DO 
 
 #######################********** Inoculum effect ****************##############################################################################################################################################################
 #### Look at inoculum effect
