@@ -247,5 +247,21 @@ ggplot(cluster_data %>% filter(name %in% c("auc", "valpeak","exp_gr","second_pea
 
 
 
+ggplot(c$parameters, aes(x=inoc, y = auc, group = interaction(inoc,strain))) + 
+  geom_boxplot(aes(col = factor(strain))) + 
+  facet_wrap(~drytime, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  scale_y_continuous("AUC")
 
+
+param_long <- c$parameters %>% pivot_longer(cols = t_m_h_flow:gap9) %>% filter(name %in% c("t_m_h_flow" ,"auc", "v_m_h_flow","mp_t1","mp_t2","mp_h1","mp_h2"))
+param_long$name <- factor(param_long$name, levels = c("t_m_h_flow", "mp_t1", "mp_t2","auc","v_m_h_flow", "mp_h1","mp_h2" ))
+
+ggplot(param_long, aes(x=inoc, y = value, group = interaction(inoc,strain))) + 
+  geom_boxplot(aes(col = factor(strain))) + 
+  facet_wrap(drytime~name, scales = "free", nrow = 2) + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") 
+ggsave("plots/glucose_conc_other_peaks.pdf")
  

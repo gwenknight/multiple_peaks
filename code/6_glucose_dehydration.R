@@ -123,12 +123,13 @@ dim(param)
 
 ## Store so don't have to run above
 write.csv(param, "output/simple_extract_glucose_allinoc_hf.csv")
-param <- read_csv("output/simple_extract_glucose_allinoc_hf.csv")[,-1]
+
 
 ##########################################################################################
 #### *********** Analyse above characteristics*************** ####################
 ##########################################################################################
 ## Take mean over replicates
+param <- read_csv("output/simple_extract_glucose_allinoc_hf.csv")[,-1]
 param_mean_bothbl <- param %>% group_by(glucose, inoc, baseline, drytime) %>% dplyr::summarise(mean_t_max = mean(t_max_h_flow),mean_h_max = mean(v_max_h_flow),
                                                                                         mean_t_min = mean(t_min_h_flow),mean_h_min = mean(v_min_h_flow),
                                                                                         mean_auc = mean(auc))
@@ -173,7 +174,7 @@ for(i in c("yes", "no")){
     ggsave(paste0("plots/glucose_summary_heatmap_hf_",i,j,".png"), width = 5, height = 8)
     
     #### Plot over glucose concentrations
-    param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i) %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+    param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i, drytime == j) %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
     param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow"))
     
     ggplot(param_long, aes(x=inoc, y = value, group = interaction(glucose,rep))) + geom_line(aes(col = factor(glucose))) + 
@@ -200,6 +201,46 @@ for(i in c("yes", "no")){
   }
 }
 
+#### Divide by glucose 0 values
+param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == "no") %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+
+p_wide <- param_long %>% group_by(rep, inoc, baseline, drytime, name) %>% dplyr::select(-c(lagtime)) %>% 
+  pivot_wider(names_from = glucose, values_from = value) %>% 
+  mutate("1.25n" = `1.25` / `0`,"2.5n" = `2.5` / `0`,"5n" = `5` / `0`) %>% 
+  dplyr::select(-c('0','1.25','2.5','5')) %>% 
+  pivot_longer(cols = c('1.25n','2.5n','5n'), names_to = "norm_glucose")
+
+ggplot(p_wide, aes(x=inoc, y = value, group = interaction(inoc,norm_glucose))) + 
+  geom_boxplot(aes(col = factor(norm_glucose))) + 
+  facet_wrap(drytime~name, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  scale_y_continuous("Multiple of value at zero glucose concentration")
+ggsave(paste0("plots/glucose_summary_boxplot_ratio_1.png"))
+
+ggplot(p_wide %>% filter(inoc > 1), aes(x=inoc, y = value, group = interaction(inoc,norm_glucose))) + 
+  geom_boxplot(aes(col = factor(norm_glucose))) + 
+  facet_wrap(drytime~name, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  scale_y_continuous("Multiple of value at zero glucose concentration")
+ggsave(paste0("plots/glucose_summary_boxplot_ratio.png"))
+
+#### AUC to v_max_h_flow values? 
+p_wide <- param_long %>% group_by(rep, inoc, baseline, drytime, name) %>% dplyr::select(-c(lagtime)) %>% 
+  pivot_wider(names_from = name, values_from = value) %>% 
+  mutate(auc_n = auc / v_max_h_flow) %>% 
+  dplyr::select(-c("auc","t_max_h_flow","v_max_h_flow")) %>% 
+  pivot_longer(cols = c(auc_n), names_to = "norm_auc")
+
+ggplot(p_wide, aes(x=inoc, y = value, group = interaction(inoc))) + 
+  geom_boxplot(aes(col = factor(glucose))) + 
+  facet_wrap(~drytime, scales = "free",ncol = 1) + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  scale_y_continuous("Multiple of value of peak that is auc")
+ggsave(paste0("plots/glucose_summary_boxplot_ratio_auc_peak.png"))
 
 ########## ************************************************************************************************ #########################
 data_hf <- rbind(data1, data2, data01, data02) # on top of each other instead of alongside
