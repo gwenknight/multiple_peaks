@@ -41,25 +41,39 @@ data02$drytime <- 0
 data1$drytime <- 7
 data2$drytime <- 7
 
-ddm <- rbind(data1, data02) # only WITHOUT baseline correction
-w1 <- which(ddm$rep == "x")
-w2 <- which(ddm$rep == "xi")
-w3 <- which(ddm$rep == "xii")
-ddm$rep <- as.numeric(ddm$rep)
-ddm[w1,"rep"] <- 1
-ddm[w2,"rep"] <- 2
-ddm[w3,"rep"] <- 3
+ddm0 <- rbind(data1, data02) # only WITHOUT baseline correction
+w1 <- which(ddm0$rep == "x")
+w2 <- which(ddm0$rep == "xi")
+w3 <- which(ddm0$rep == "xii")
+ddm0$rep <- as.numeric(ddm0$rep)
+ddm0[w1,"rep"] <- 1
+ddm0[w2,"rep"] <- 2
+ddm0[w3,"rep"] <- 3
 
 ###*** Clean those that have v high low early data (remove for this one)
-ttt <- intersect(intersect(intersect(intersect(which(ddm$glucose == 1.25), which(ddm$rep == 2)), which(ddm$glucose_conc == "D")),which(ddm$inoc == 2)),which(ddm$drytime == 7))
-sss <- intersect(intersect(intersect(intersect(which(ddm$glucose == 5), which(ddm$rep == 1)), which(ddm$glucose_conc == "B")),which(ddm$inoc == 2)),which(ddm$drytime == 7))
-ppp <- intersect(intersect(intersect(intersect(which(ddm$glucose == 5), which(ddm$rep == 1)), which(ddm$glucose_conc == "B")),which(ddm$inoc == 1)),which(ddm$drytime == 7))
-qqq <- intersect(intersect(intersect(intersect(which(ddm$glucose == 5), which(ddm$rep == 3)), which(ddm$glucose_conc == "B")),which(ddm$inoc == 2)),which(ddm$drytime == 7))
-ddd <- intersect(intersect(intersect(intersect(which(ddm$glucose == 5), which(ddm$rep == 2)), which(ddm$glucose_conc == "B")),which(ddm$inoc == 1)),which(ddm$drytime == 7))
-kkk <- intersect(intersect(intersect(intersect(which(ddm$glucose == 0), which(ddm$rep == 1)), which(ddm$glucose_conc == "E")),which(ddm$inoc == 6)),which(ddm$drytime == 0))
-ggg <- intersect(intersect(intersect(intersect(which(ddm$glucose == 0), which(ddm$rep == 3)), which(ddm$glucose_conc == "E")),which(ddm$inoc == 7)),which(ddm$drytime == 0))
-hhh <- intersect(intersect(intersect(intersect(which(ddm$glucose == 0), which(ddm$rep == 2)), which(ddm$glucose_conc == "E")),which(ddm$inoc == 6)),which(ddm$drytime == 0))
-ddm <- ddm[-c(sss,ttt,ppp,qqq,ddd,kkk,ggg,hhh),]
+ttt <- intersect(intersect(intersect(intersect(which(ddm0$glucose == 1.25), which(ddm0$rep == 2)), which(ddm0$glucose_conc == "D")),which(ddm0$inoc == 2)),which(ddm0$drytime == 7))
+
+ppp <- intersect(intersect(intersect(intersect(which(ddm0$glucose == 5), which(ddm0$rep == 1)), which(ddm0$glucose_conc == "B")),which(ddm0$inoc == 1)),which(ddm0$drytime == 7))
+ddd <- intersect(intersect(intersect(intersect(which(ddm0$glucose == 5), which(ddm0$rep == 2)), which(ddm0$glucose_conc == "B")),which(ddm0$inoc == 1)),which(ddm0$drytime == 7))
+qqq <- intersect(intersect(intersect(intersect(which(ddm0$glucose == 5), which(ddm0$rep == 3)), which(ddm0$glucose_conc == "B")),which(ddm0$inoc == 2)),which(ddm0$drytime == 7))
+sss <- intersect(intersect(intersect(intersect(which(ddm0$glucose == 5), which(ddm0$rep == 1)), which(ddm0$glucose_conc == "B")),which(ddm0$inoc == 2)),which(ddm0$drytime == 7))
+
+## Which removed? 
+ddm0_rem <- ddm0[c(sss,ttt,ppp,qqq,ddd),]
+g1 <- ggplot(ddm0_rem, aes(x=Time, y = value, group = interaction(variable, rep, inoc, glucose, drytime))) + geom_line(aes(col = variable)) + ggtitle("Removed") + 
+  scale_y_continuous(lim = c(round_any(min(ddm0$value), 10, f = floor),round_any(max(ddm0$value), 10, f = ceiling)))
+g2 <- ggplot(ddm0, aes(x=Time, y = value, group = interaction(variable, rep, inoc, glucose, drytime))) + geom_line(aes(col = variable)) + ggtitle("All strains") + 
+  scale_y_continuous(lim = c(round_any(min(ddm0$value), 10, f = floor),round_any(max(ddm0$value), 10, f = ceiling)))
+g1 + g2
+ggsave("plots/glucose_conc_outliers.jpeg")
+
+ddm <- ddm0[-c(sss,ttt,ppp,qqq,ddd),]
+
+# Need to have two reps at least for clustering otherwise just an outlier: 
+ddm %>% group_by(variable, glucose, inoc, drytime) %>% count(rep) %>% count() %>% filter(n < 3) %>% print(n=Inf)
+# Two have only one replicate => have to remove as can't call cluster with only one dataset 
+# glucose 5, drytime 7, inoculum size 1 + 2 
+ddm <- ddm %>% filter(!variable %in% c("B7","B8"))
 
 
 ###******* MODEL FITTING *************#######################################################################################################################################
@@ -155,13 +169,48 @@ c <- c()
 c$parameters <- read_csv("output/clustered_parameters_glucose_dehydration.csv")
 c$ts <- read.csv("output/clustered_time_series_glucose_dehydration.csv")
 
+### Glucose into parameter data 
+c$parameters$glucose <- 0
+c$parameters[which(c$parameters$strain == "B"),"glucose"] <- 5
+c$parameters[which(c$parameters$strain == "C"),"glucose"] <- 2.5
+c$parameters[which(c$parameters$strain == "D"),"glucose"] <- 1.25
+
+### NA cluster exploration
+ggplot(c$ts %>% filter(cluster == ""), aes(x=Time, y = value_J, group = interaction(glucose, drytime, rep, strain, inoc))) + 
+  geom_line(aes(col = factor(strain), linetype = factor(drytime))) + 
+  facet_grid(glucose ~ inoc) + 
+  scale_x_continuous("Time") + 
+  scale_color_discrete("Strain") + 
+  scale_linetype_discrete("Drytime")
+ggsave("plots/glucose_conc_nonclustering.jpeg")
+
+c$ts %>% filter(cluster == "") %>% group_by(variable, drytime, inoc, glucose, strain, rep) %>% slice(1)
+# Outliers - how cluster? 
+c_new <- cluster(ddm %>% filter(variable == "E7", drytime == 0), param %>% filter(strain == "E", inoc == 2, drytime == 0),plot_where = "plots/glucose_conc_") 
+c_new <- cluster(ddm %>% filter(variable == "C4", drytime == 7), param %>% filter(strain == "C", inoc == 5, drytime == 7),plot_where = "plots/glucose_conc_") 
+
+# cn <- cut_extract_dp(ddm %>% filter(variable == "C4", drytime == 7, rep == 1), "Time", "value_J", paste(conc, replicate, condition, inocl,sep="_")) ### NEW function: runs on any timeseries: gives baseline and cut parameter analysis
+# dcn <- as.data.frame(t(cn$param))
+# dcn <- as.numeric(dcn)
+# colnames(dcn) <- c("t_m_h_flow", "v_m_h_flow", "exp_gr","lag","auc",
+#                   "odd_peaks","odd_width","width_peak","odd_shoulder","odd_shoulder_past","odd_double",
+#                   "shoulder_point_t","shoulder_point_v", "shoulder_point_past_t","shoulder_point_past_v",
+#                   "cut_exp", "timepeak", "valpeak",
+#                   "mp_t1","mp_t2","mp_t3","mp_t4","mp_t5","mp_t6","mp_t7","mp_t8","mp_t9","mp_t10",
+#                   "mp_h1","mp_h2","mp_h3","mp_h4","mp_h5","mp_h6","mp_h7","mp_h8","mp_h9","mp_h10",
+#                   "gap1","gap2","gap3","gap4","gap5","gap6","gap7","gap8","gap9")
+# dcn$shoulder_point_past_t <- as.numeric(dcn$shoulder_point_past_t)
+# dcn$shoulder_point_past_v <- as.numeric(dcn$shoulder_point_past_v)
+# ggplot(ddm %>% filter(variable == "C4", drytime == 7, rep == 1), aes(x=Time, y=value_J)) + geom_line() + 
+#   geom_point(data = dcn, aes(x = shoulder_point_past_t, y = shoulder_point_past_v))
+
 ### Overview by glucose
 ggplot(c$ts, aes(x=Time, y = value_J, group = interaction(strain, inoc, rep, cluster))) + 
   geom_line(aes(colour = cluster)) + 
   facet_grid(inoc + drytime~glucose)
 
 ggplot(c$parameters, aes(x=inoc, group = cluster)) + 
-  geom_bar(stat = "count", position = "dodge", aes(fill = cluster)) + 
+  geom_bar(stat = "count", position = "stack", aes(fill = cluster)) + 
   facet_grid(~drytime) + 
   scale_x_continuous("Inoculum") + 
   scale_y_continuous("Number of datasets") + 
@@ -196,83 +245,23 @@ ggplot(cluster_data %>% filter(name %in% c("auc", "valpeak","exp_gr","second_pea
          mutate(across(name, factor, levels=c("auc", "valpeak","exp_gr","second_peak_h"))), aes(x = interaction(inoc,cluster), y = value)) + 
   geom_boxplot(aes(fill = cluster)) +  facet_wrap(drytime~name,ncol = 4, scales = "free", labeller = labeller(name = var_name))
 
-ggplot(c$ts %>% filter(cluster == ""), aes(x=Time,y =value_J,group = interaction(rep, inoc, strain))) + 
-  geom_line(aes(col = factor(rep))) + 
-  facet_wrap(~glucose, ncol = 4)
 
 
+ggplot(c$parameters, aes(x=inoc, y = auc, group = interaction(inoc,strain))) + 
+  geom_boxplot(aes(col = factor(strain))) + 
+  facet_wrap(~drytime, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  scale_y_continuous("AUC")
 
-# 
-# 
-# gf1 <- c$parameters %>% 
-#   filter(drytime == 0) %>% 
-#   filter(!(strain %in% c("Newman", "RWW12", "SA3297", "SA2704", "RWW146", "SAC042W", "Mu50", "M116"))) %>%
-#   dplyr::select(inoc, cluster, strain) %>% 
-#   group_by(inoc, strain) %>% summarise(u = unique(cluster)) %>% group_by(inoc, u) %>% dplyr::summarise(n=n())
-# length(unique(gf1$strain)) # CHECK now 97 strains
-# # Add in unclustered name
-# w<-which(gf1$u == "")
-# gf1[w,"u"] <- "unclustered"
-# 
-# table_cluster_distribution <- gf1 %>% pivot_wider(names_from = u, values_from = n, values_fill = 0) %>% arrange(desc(inocl))
-# rowSums(table_cluster_distribution) # CHECK: 97 strains + inocl column = 100/101/102
-# table_cluster_distribution <- rename(table_cluster_distribution, Inoculum = inocl, Double = double, 
-#                                      Normal = normal, Spike = spike, Wide = wide, Postshoulder = post_shoulder, Unclustered = "NA")
-# table_cluster_distribution <- table_cluster_distribution[,c("Inoculum","Normal","Double", "Spike","Postshoulder","Wide", "Unclustered")]
-# rownames(table_cluster_distribution) <- NULL
-# 
-# pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
-# grid.table(table_cluster_distribution)
-# dev.off()
-# # png("plots/final/table_cluster_distribution.png", height=2, width=7, units = "in", res = 72)
-# # grid.table(table_cluster_distribution)
-# # dev.off()
-# 
-# ### Table with how they change across inoculum 
-# table_changes <- c$parameters %>% ungroup() %>% dplyr::select(strain, rep, drytime, inocl, cluster) %>% 
-#   pivot_wider(names_from = inocl, values_from = cluster)
-# write.csv(table_changes, "output/table_changes_cluster_over_inoc.csv")
-# 
-# colnames(table_changes) <- c("strain", "rep", "drytime", "five", "four", "three")
-# t_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
-#                                       fourtothree = ifelse(four == three,0,1),
-#                                       difference = fivetofour + fourtothree) %>% filter(difference > 0)
-# write.csv(t_changes, "output/table_changes_cluster_over_inoc_with_differences.csv")
-# 
-# tt_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
-#                                        fourtothree = ifelse(four == three,0,1),
-#                                        fivetothree = ifelse(five == three,0,1),
-#                                        difference = fivetofour + fourtothree + fivetothree) #%>% filter(difference > 0)
-# write.csv(tt_changes, "output/tt_changes_cluster_over_inoc_with_more_differences.csv")
-# #write.csv2(tt_changes, "output/table_changes_cluster_over_inoc_with_more_differences.csv")
-# 
-# td_changes <- table_changes %>% mutate(fivetofour = ifelse(five == four,0,1),
-#                                        fourtothree = ifelse(four == three,0,1),
-#                                        fivetothree = ifelse(five == three,0,1),
-#                                        difference = fivetofour + fourtothree + fivetothree) %>% filter(difference > 0)
-# dim(td_changes) #259 x 10
-# td_changes <- td_changes %>%  filter(drytime == 0) # 129 x 10
-# td_changes <- td_changes[!td_changes$five == "",] # 124 x 10
-# td_changes <- td_changes[!td_changes$three == "",] # 118 x 10
-# 
-# write.csv(td_changes, "output/td_changes_cluster_over_inoc_with_more_differences.csv")
-# 
-# unique(td_changes$five)
-# unique(td_changes$three)
-# unique(td_changes[, c("five", "three")]) # 15 unique combinations of clusters between five and three
-# 
-# count_td_changes <- dplyr::count_(td_changes, vars = c('five','three'))
-# write.csv(count_td_changes, "output/count_td_changes.csv")
-# 
-# #### FIGURE: Patterns across inoc
-# gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
-# ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
-#   scale_x_discrete("Cluster type", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) + 
-#   scale_y_continuous("Inoculum size") 
-# ggsave("plots/heatmap_cluster_by_inoculum.pdf")
-# 
-# # ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") +
-# #   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
-# #   scale_y_continuous("Inoculum size")
-# # ggsave("plots/final/figure2.png", width = 8, height = 4)
-# # ggsave("plots/final/figure2.tiff", width = 8, height = 6, dpi = 600)
+
+param_long <- c$parameters %>% pivot_longer(cols = t_m_h_flow:gap9) %>% filter(name %in% c("t_m_h_flow" ,"auc", "v_m_h_flow","mp_t1","mp_t2","mp_h1","mp_h2"))
+param_long$name <- factor(param_long$name, levels = c("t_m_h_flow", "mp_t1", "mp_t2","auc","v_m_h_flow", "mp_h1","mp_h2" ))
+
+ggplot(param_long, aes(x=inoc, y = value, group = interaction(inoc,strain))) + 
+  geom_boxplot(aes(col = factor(strain))) + 
+  facet_wrap(drytime~name, scales = "free", nrow = 2) + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") 
+ggsave("plots/glucose_conc_other_peaks.pdf")
+ 
