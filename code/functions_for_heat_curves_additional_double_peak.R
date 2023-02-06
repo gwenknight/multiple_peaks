@@ -652,22 +652,25 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       sub_parm <- parameters %>% filter(drytime == drytimes[j], inoc == inocs[k])
       
       ####**** (Cluster 1) clear double peaks
-      double_peak_curves_analysis <- as.data.frame(sub_parm %>% filter(odd_peaks == 1) %>% group_by(strain) %>% mutate(n_odd_peaks = n()) )
-      
-      nd <- left_join(as.data.frame(sub_ts), double_peak_curves_analysis[,c("strain","rep","odd_peaks","n_odd_peaks")], by = c("strain", "rep"))
-      g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_odd_peaks))) + facet_wrap(~strain) + 
-        scale_color_manual("Number of\nreps with\nodd peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
-      ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_double_peaks.pdf"))
-      
-      # which are in cluster 1
-      peaks_double <- double_peak_curves_analysis %>% filter(n_odd_peaks > 1) %>% ungroup() %>% summarise(unique(strain)) # double peaks in all replicates
-      sub_ts[which(sub_ts$strain %in% unlist(peaks_double)), "cluster"] = "double"
-      sub_parm[which(sub_parm$strain %in% unlist(peaks_double)), "cluster"] = "double"
-      
+      ####* Are there any? 
+      dp <- sub_parm %>% filter(odd_peaks == 1) 
+      if(dim(dp)[1]>0){
+        double_peak_curves_analysis <- as.data.frame(dp %>% group_by(strain) %>% dplyr::mutate(n_odd_peaks = n()) )
+        
+        nd <- left_join(as.data.frame(sub_ts), double_peak_curves_analysis[,c("strain","rep","odd_peaks","n_odd_peaks")], by = c("strain", "rep"))
+        g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_odd_peaks))) + facet_wrap(~strain) + 
+          scale_color_manual("Number of\nreps with\nodd peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
+        ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_double_peaks.pdf"))
+        
+        # which are in cluster 1
+        peaks_double <- double_peak_curves_analysis %>% filter(n_odd_peaks > 1) %>% ungroup() %>% summarise(unique(strain)) # double peaks in all replicates
+        sub_ts[which(sub_ts$strain %in% unlist(peaks_double)), "cluster"] = "double"
+        sub_parm[which(sub_parm$strain %in% unlist(peaks_double)), "cluster"] = "double"
+      }
       
       ####**** (Cluster 2) clear "normal peaks"
       normal_peak_curves_analysis <- as.data.frame(sub_parm %>% mutate(odd = odd_peaks + odd_width + odd_shoulder + odd_shoulder_past) %>% filter(odd == 0) %>% 
-                                                     group_by(strain) %>% mutate(n_normal = n()))
+                                                     group_by(strain) %>% dplyr::mutate(n_normal = n()))
       nd <- left_join(as.data.frame(sub_ts), normal_peak_curves_analysis[,c("strain","rep","n_normal")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_normal))) + facet_wrap(~strain)+ 
         scale_color_manual("Number of\nreps with\nnormal peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
@@ -678,7 +681,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       sub_parm[which(sub_parm$strain %in% unlist(peaks_normal)), "cluster"] = "normal"
       
       ####**** (Cluster 3) Some have a single rep that is a "peak" and then rest are "shoulders" => basically multiple peaks = spike
-      spiked_analysis <- as.data.frame(sub_parm %>% mutate(odd_spike = odd_peaks + odd_shoulder) %>% filter(odd_spike > 0) %>% group_by(strain) %>% mutate(n_spike = n())) # how many have spikes in all? 
+      spiked_analysis <- as.data.frame(sub_parm %>% mutate(odd_spike = odd_peaks + odd_shoulder) %>% filter(odd_spike > 0) %>% group_by(strain) %>% dplyr::mutate(n_spike = n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), spiked_analysis[,c("strain","rep","n_spike")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spike))) + facet_wrap(~strain)+ 
         scale_color_manual("Number of\nreps with\nspike peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
@@ -692,7 +695,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       clustered = unlist(sub_ts %>% filter(!cluster == "") %>% summarise(unique(strain)))
       
       ####***** (Cluster 4) Clear post shoulders
-      post_should_analysis <- as.data.frame(sub_parm %>% filter(odd_shoulder_past == 1) %>% group_by(strain, inoc, drytime) %>% mutate(n_spast= n())) # how many have spikes in all? 
+      post_should_analysis <- as.data.frame(sub_parm %>% filter(odd_shoulder_past == 1) %>% group_by(strain, inoc, drytime) %>% dplyr::mutate(n_spast= n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), post_should_analysis[,c("strain","rep","n_spast")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_spast))) + facet_wrap(~strain)+ 
         scale_color_manual("Number of\nreps with\npast peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
@@ -713,7 +716,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       #ggsave(paste0(plot_where,name,"_shoulder_pre.pdf"))
       
       # (Cluster 5) Wide
-      wide_analysis <- as.data.frame(sub_parm %>% filter(odd_width == 1) %>% group_by(strain, inoc, drytime) %>% mutate(n_wide = n())) # how many have spikes in all? 
+      wide_analysis <- as.data.frame(sub_parm %>% filter(odd_width == 1) %>% group_by(strain, inoc, drytime) %>% dplyr::mutate(n_wide = n())) # how many have spikes in all? 
       nd <- left_join(as.data.frame(sub_ts), wide_analysis[,c("strain","rep","n_wide")], by = c("strain", "rep"))
       g <- ggplot(nd, aes(x=Time, y = value_J, group = rep)) + geom_line(aes(col = factor(n_wide))) + facet_wrap(~strain) + 
         scale_color_manual("Number of\nreps with\nwide peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
