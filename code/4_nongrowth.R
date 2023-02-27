@@ -95,6 +95,8 @@ data_od_normd <- data_od %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < 
   pivot_wider(id_cols = c(strain, Time, rep, inoc), names_from = exp, values_from = compara_norm_inp) %>%dplyr::mutate(nongrowth_only = CS - OD) %>% # look for difference between OD and heat output
   pivot_longer(cols = c("CS","OD"), names_to = "exp", values_to ="imput_val")
 
+# Add in time to peak value
+data_od <- data_od %>% group_by(strain, rep, exp, inoc) %>% mutate(peak = max(compara), equals_peak = ifelse(compara == peak, 1, 0), times_peak = ifelse(equals_peak == 1, Time, 0), time_peak = max(times_peak))
 data_od_normd_ana <- left_join(data_od, data_od_normd)
 
 ggplot(data_od_normd_ana, aes(x=Time, y = nongrowth_only, group = interaction(exp,rep, strain))) + 
@@ -130,27 +132,31 @@ ggsave("plots/ODvsCS_data_nongrowth_tog_grid.pdf")
 #### Explore data and extract 
 data_exploration_od_cs(data_od_orig %>% filter(inoc == 5), "inoc5")
 
+
 g1 <- ggplot(data_od %>% filter(inoc == 5), aes(x=Time, y = compara, group = interaction(rep, exp, strain))) + 
   geom_line(aes(col = factor(rep),lty = factor(exp))) + 
+  geom_vline(aes(xintercept = time_peak, col = factor(rep)), alpha = 0.3) + 
   facet_grid(exp~strain, scales = "free") + 
   scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source") + 
-  scale_y_continuous("Raw data")
+  scale_y_continuous("Raw data") 
 
 g2 <- ggplot(data_od %>% filter(inoc == 5), aes(x=Time, y = compara_norm, group = interaction(rep, exp, strain))) + 
-  geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
+  geom_line(aes(col = interaction(rep), lty = exp)) + 
+  geom_vline(aes(xintercept = time_peak, col = factor(rep)), alpha = 0.3) + 
   facet_grid(~strain, scales = "free") + 
-  scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source") 
+  scale_x_continuous("Time (h)") + scale_color_discrete("Replicate") + scale_linetype_discrete("Data source") + scale_y_continuous("Normalised measure")
 
 g3 <- ggplot(data_od_normd_ana %>% filter(inoc == 5), aes(x=Time, y = nongrowth_only, group = interaction(rep, strain))) + 
   geom_line(aes(col = interaction(rep))) + 
   facet_grid(~strain) + 
+  geom_vline(aes(xintercept = time_peak, col = factor(rep)), alpha = 0.3) + 
   scale_x_continuous("Time (h)") + 
   scale_y_continuous("Non growth only") + 
   scale_color_discrete("Replicate") + 
   geom_hline(yintercept = 0)
 
-g1/g2/g3
-ggsave("plots/fig4.tiff") #### TO DO 
+(g1/g2 + plot_layout(guides = "collect"))/g3 + plot_layout(guides = "collect")
+ggsave("plots/final/figure4.png",width = 8, height = 6, dpi = 600)
 
 #######################********** Inoculum effect ****************##############################################################################################################################################################
 #### Look at inoculum effect

@@ -163,7 +163,16 @@ gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wid
 ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
   scale_x_discrete("Cluster type", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) + 
   scale_y_continuous("Inoculum size") 
-ggsave("plots/heatmap_cluster_by_inoculum.pdf")
+ggsave("plots/heatmap_cluster_by_inoculum.png")
+
+ggplot(gf1, aes(x= inocl, y = n, fill= u)) + 
+  geom_bar(position="dodge", stat="identity") + 
+  scale_fill_discrete("Cluster", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) +
+  scale_y_continuous("Number of strains") + 
+  scale_x_continuous("Inoculum") + 
+  geom_text(aes(label=n),position=position_dodge(width=0.9), vjust=-0.25) 
+ggsave("plots/final/figure2.png",width = 8, height = 6, dpi = 600)
+
 
 # ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") +
 #   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
