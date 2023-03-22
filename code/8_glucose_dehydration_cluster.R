@@ -168,6 +168,7 @@ write.csv(c$ts,"output/clustered_time_series_glucose_dehydration.csv")
 c <- c()
 c$parameters <- read_csv("output/clustered_parameters_glucose_dehydration.csv")
 c$ts <- read.csv("output/clustered_time_series_glucose_dehydration.csv")
+param <- read.csv("output/param_multiple_peaks_glucose_dehydration.csv")
 
 ### Glucose into parameter data 
 c$parameters$glucose <- 0

@@ -227,6 +227,32 @@ ggplot(p_wide %>% filter(inoc > 1), aes(x=inoc, y = value, group = interaction(i
   scale_y_continuous("Multiple of value at zero glucose concentration")
 ggsave(paste0("plots/glucose_summary_boxplot_ratio.png"))
 
+### Look at stats of the differences in AUC by inoculum 
+my_comparisons <- list( c("1.25n", "2.5n"), c("1.25n", "5n"), c("2.5n", "5n"))
+
+ggplot(p_wide %>% filter(inoc > 1, name == "auc"), aes(x=norm_glucose, y = value, group = interaction(inoc,norm_glucose))) + 
+  geom_boxplot(aes(col = factor(norm_glucose))) + 
+  facet_wrap(drytime~inoc+ name, scales = "free", nrow = 2) + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose\nconcentration") + 
+  #scale_x_continuous("", breaks = c()) + 
+  scale_y_continuous("Multiple of value at zero glucose concentration") + 
+  stat_compare_means(comparisons = my_comparisons, aes(label = paste0("p = ", after_stat(p.format)))) # Not working? 
+  #stat_compare_means(comparisons=my_comparisons, method="wilcox.test", label="p.signif", color="red")
+ggsave("plots/glucose_summary_boxplot_ratio_stats.png")
+
+### Pivot plot 
+g <- ggplot(p_wide %>% filter(inoc > 1, name == "auc"), aes(x=inoc, y = value, group = interaction(norm_glucose))) + 
+  geom_point(aes(col = factor(norm_glucose))) + 
+  geom_smooth(aes(fill = norm_glucose, col = norm_glucose)) + 
+  facet_wrap(~drytime, scales = "free", nrow = 2) + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose\nconcentration") + 
+  #scale_x_continuous("", breaks = c()) + 
+  scale_y_continuous("Multiple of value at zero glucose concentration") 
+ggsave("plots/glucose_summary_auc_by_inoc.pdf")
+
+g + facet_wrap(drytime ~ norm_glucose, scales = "free", nrow = 2)
+ggsave("plots/glucose_summary_auc_by_inoc_by_facet.pdf")
+
 #### AUC to v_max_h_flow values? 
 p_wide <- param_long %>% group_by(rep, inoc, baseline, drytime, name) %>% dplyr::select(-c(lagtime)) %>% 
   pivot_wider(names_from = name, values_from = value) %>% 
