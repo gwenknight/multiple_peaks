@@ -206,8 +206,8 @@ for(i in c("yes", "no")){
 i = "no"
 j = "all"
 #### Plot over glucose concentrations
-param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i) %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
-param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i) %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow","v_min_h_flow"))
+param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow","v_min_h_flow"))
 
 ggplot(param_long, aes(x=inoc, y = value, group = interaction(glucose,rep))) + geom_line(aes(col = factor(glucose))) + 
   facet_grid(name~drytime, scales = "free") + 
