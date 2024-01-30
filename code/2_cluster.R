@@ -41,7 +41,7 @@ param$rep_no <- as.numeric(sub(".*\\.", "", param$rep))
 param$inoc <- param$inocl
 
 # Some strain removed as not enough reps
-strains_in <- as.numeric(unlist(param %>% summarise(unique(strain))))
+strains_in <- as.numeric(unlist(param %>% dplyr::summarise(unique(strain))))
 ddm <- ddm %>% filter(strain %in% strains_in)
 
 

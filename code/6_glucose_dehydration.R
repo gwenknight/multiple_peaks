@@ -17,6 +17,7 @@ library(zoo)
 library(patchwork)
 library(imputeTS)
 library(MESS) # for auc
+library(ggpubr)
 theme_set(theme_bw(base_size=14)) # theme setting for plots: black and white (bw) and font size (24)
 mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(14)
 
@@ -276,5 +277,5 @@ c0 <- cluster(data_hf %>% filter(glucose == 0) %>% mutate(), param %>% filter(gl
 ########## ************************************************************************************************ #########################
 
 ### Store output of clustering
-write.csv(c$parameters,"output/clustered_parameters.csv")
-write.csv(c$ts,"output/clustered_time_series.csv")
+write.csv(c0$parameters,"output/glucose_drying_clustered_parameters.csv")
+write.csv(c0$ts,"output/glucose_drying_clustered_time_series.csv")
