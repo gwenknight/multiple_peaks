@@ -132,8 +132,8 @@ write.csv(param, "output/simple_extract_glucose_allinoc_hf.csv")
 ## Take mean over replicates
 param <- read_csv("output/simple_extract_glucose_allinoc_hf.csv")[,-1]
 param_mean_bothbl <- param %>% group_by(glucose, inoc, baseline, drytime) %>% dplyr::summarise(mean_t_max = mean(t_max_h_flow),mean_h_max = mean(v_max_h_flow),
-                                                                                        mean_t_min = mean(t_min_h_flow),mean_h_min = mean(v_min_h_flow),
-                                                                                        mean_auc = mean(auc))
+                                                                                               mean_t_min = mean(t_min_h_flow),mean_h_min = mean(v_min_h_flow),
+                                                                                               mean_auc = mean(auc))
 
 #### Two baselines
 for(i in c("yes", "no")){
@@ -202,6 +202,36 @@ for(i in c("yes", "no")){
   }
 }
 
+#### No correction 
+i = "no"
+j = "all"
+#### Plot over glucose concentrations
+param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == i) %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow"))
+
+ggplot(param_long, aes(x=inoc, y = value, group = interaction(glucose,rep))) + geom_line(aes(col = factor(glucose))) + 
+  facet_grid(name~drytime, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  ggtitle(paste0("Baseline correction: ", i, " Drytime: ",j))
+ggsave(paste0("plots/glucose_summary_lines_hf_",i,j,".png"))
+
+ggplot(param_long, aes(x=inoc, y = value, group = interaction(glucose))) + geom_point(aes(col = factor(glucose))) + 
+  geom_smooth(aes(col = factor(glucose), fill = factor(glucose)),method='loess', formula= y~x) + 
+  facet_grid(name~drytime, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  ggtitle(paste0("Baseline correction: ", i, " Drytime: ",j))
+ggsave(paste0("plots/glucose_summary_smoothed_hf_",i,j,".png"))
+
+ggplot(param_long, aes(x=inoc, y = value, group = interaction(inoc,glucose))) + geom_boxplot(aes(col = factor(glucose))) + 
+  facet_grid(name~drytime, scales = "free") + 
+  scale_color_discrete("Glucose concentration") + scale_fill_discrete("Glucose concentration") + 
+  scale_x_continuous("Inoculum") + 
+  ggtitle(paste0("Baseline correction: ", i, " Drytime: ",j))
+ggsave(paste0("plots/glucose_summary_boxplot_",i,j,".png"))
+
+
 #### Divide by glucose 0 values
 param_long <- param %>% pivot_longer(cols = t_max_h_flow:auc) %>% filter(baseline == "no") %>% filter(name %in% c("t_max_h_flow" ,"auc", "v_max_h_flow"))
 param_long$name <- factor(param_long$name, levels = c("t_max_h_flow" ,"auc", "v_max_h_flow"))
@@ -238,7 +268,7 @@ ggplot(p_wide %>% filter(inoc > 1, name == "auc"), aes(x=norm_glucose, y = value
   #scale_x_continuous("", breaks = c()) + 
   scale_y_continuous("Multiple of value at zero glucose concentration") + 
   stat_compare_means(comparisons = my_comparisons, aes(label = paste0("p = ", after_stat(p.format)))) # Not working? 
-  #stat_compare_means(comparisons=my_comparisons, method="wilcox.test", label="p.signif", color="red")
+#stat_compare_means(comparisons=my_comparisons, method="wilcox.test", label="p.signif", color="red")
 ggsave("plots/glucose_summary_boxplot_ratio_stats.png")
 
 ### Pivot plot 

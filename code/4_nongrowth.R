@@ -227,7 +227,8 @@ for(jj in 1:length(u)){ # for each strain
         
         if(dim(data1)[1] > 0){ # if this replicate exists for this strain (i.e. there is data)
           
-          print(c(jj, u[jj], r[ii], inn[pp],ex[kk])) # output so can track how it is working
+          #print(c(jj, u[jj], r[ii], inn[pp],ex[kk])) # output so can track how it is working
+          print(c(jj, u[jj], r[ii], inn[pp],exp)) 
           p <- charac_extract(data_nong, "Time", "nongrowth_only", data1, data2, "compara_norm", paste(strain, replicate, condition, inocl,sep="_")) ### NEW function: simplification of more complex data recognition for clustering
           
           ## Required parameters
@@ -317,6 +318,12 @@ ggplot(param_long, aes(x=inoc, y = value, group = interaction(strain))) + geom_p
   scale_x_continuous("Inoculum")
 ggsave("plots/ODvsCS_summary_smoothed.pdf")
 
+# ggplot(param_long, aes(x=inoc, y = value, group = interaction(strain))) + geom_point(aes(col = factor(strain))) + 
+#   geom_smooth(aes(col = factor(strain), fill = factor(strain)),method='loess', formula= y~x) + 
+#   facet_wrap(~name, scales = "free") + 
+#   scale_color_discrete("Strain") + scale_fill_discrete("Strain") + 
+#   scale_x_continuous("Inoculum")
+# ggsave("plots/ODvsCS_summary_smoothed_loess.png", width = 12, height = 8)
 
 #### Timing / bump analysis over inocula on one graph
 data_bump <- left_join(data_od_normd_ana %>% dplyr::select(Time, nongrowth_only,inoc, rep, strain), param) %>% mutate(nolag = Time - lagtime)
