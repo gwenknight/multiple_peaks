@@ -41,7 +41,7 @@ param$rep_no <- as.numeric(sub(".*\\.", "", param$rep))
 param$inoc <- param$inocl
 
 # Some strain removed as not enough reps
-strains_in <- as.numeric(unlist(param %>% summarise(unique(strain))))
+strains_in <- as.numeric(unlist(param %>% dplyr::summarise(unique(strain))))
 ddm <- ddm %>% filter(strain %in% strains_in)
 
 
@@ -159,11 +159,17 @@ count_td_changes <- dplyr::count_(td_changes, vars = c('five','three'))
 write.csv(count_td_changes, "output/count_td_changes.csv")
 
 #### FIGURE: Patterns across inoc
+gf1 <- c$parameters %>% 
+  filter(drytime == 0) %>% 
+  filter(!(strain %in% c("Newman", "RWW12", "SA3297", "SA2704", "RWW146", "SAC042W", "Mu50", "M116"))) %>%
+  dplyr::select(inocl, cluster, strain) %>% 
+  group_by(inocl, strain) %>% summarise(u = unique(cluster)) %>% group_by(inocl, u) %>% dplyr::summarise(n=n())
+
 gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
-ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
-  scale_x_discrete("Cluster type", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) + 
-  scale_y_continuous("Inoculum size") 
-ggsave("plots/heatmap_cluster_by_inoculum.png")
+# ggplot(gf1, aes(u, inocl, fill= n)) + geom_tile() + scale_fill_viridis(discrete=FALSE, "Number of\nstrains") + 
+#   scale_x_discrete("Cluster type", labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) + 
+#   scale_y_continuous("Inoculum size") 
+# ggsave("plots/heatmap_cluster_by_inoculum.png")
 
 ggplot(gf1, aes(x= inocl, y = n, fill= u)) + 
   geom_bar(position="dodge", stat="identity") + 

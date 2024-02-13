@@ -82,7 +82,7 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
       wl<-intersect(w,which(ts[peaks_index,Time] > 0.6*max(ts[,Time]))) # which in the odd 70-95% of the time range
       if(length(wl)>0){ # if a late peak check it is big 
         for(gg in 1:length(wl)){
-          if(ts[peaks_index[wl[gg]],value] < 0.45*max(ts[,value])){ # if not bigger than 40% of maximum value in timeseries
+          if(ts[peaks_index[wl[gg]],value] < 0.45*max(ts[,value])){ # if not bigger than 45% of maximum value in timeseries
             w <-setdiff(w,wl[gg]) }}}   # then remove
       peaks_index <- peaks_index[w] # Keep the ones not at the beginning / end
       
@@ -663,7 +663,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
         ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_double_peaks.pdf"))
         
         # which are in cluster 1
-        peaks_double <- double_peak_curves_analysis %>% filter(n_odd_peaks > 1) %>% ungroup() %>% summarise(unique(strain)) # double peaks in all replicates
+        peaks_double <- double_peak_curves_analysis %>% filter(n_odd_peaks > 1) %>% ungroup() %>% summarise(unique(strain)) # double peaks in at least 1 replicate
         sub_ts[which(sub_ts$strain %in% unlist(peaks_double)), "cluster"] = "double"
         sub_parm[which(sub_parm$strain %in% unlist(peaks_double)), "cluster"] = "double"
       }
@@ -676,7 +676,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
         scale_color_manual("Number of\nreps with\nnormal peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
       ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_normal_peaks.pdf"))
       
-      peaks_normal <- normal_peak_curves_analysis %>% filter(n_normal > 1) %>% ungroup() %>% summarise(unique(strain)) # double peaks in two or all replicates
+      peaks_normal <- normal_peak_curves_analysis %>% filter(n_normal > 1) %>% ungroup() %>% summarise(unique(strain)) # at least 1 replicate that is normal
       sub_ts[which(sub_ts$strain %in% unlist(peaks_normal)), "cluster"] = "normal"
       sub_parm[which(sub_parm$strain %in% unlist(peaks_normal)), "cluster"] = "normal"
       
