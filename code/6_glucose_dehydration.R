@@ -27,8 +27,8 @@ source("code/functions_for_heat_curves_additional_double_peak.R")
 # 11016 data
 # Only HF
 # 3 reps  7 inoc / 4 gluc
-data1 <- read_csv("data/glucose_HF_noBC_t8.csv")[,-1] # with baseline correction 
-data2 <- read_csv("data/glucose_HF_t8.csv")[,-1] # without baseline correction 
+data1 <- read_csv("data/glucose_HF_noBC_t8.csv")[,-1] # without baseline correction 
+data2 <- read_csv("data/glucose_HF_t8.csv")[,-1] # with baseline correction 
 data01 <- read_csv("data/glucose_HF.csv")[,-1] # time 0 data 
 data02 <- read_csv("data/glucose_HF_noBC.csv")[,-1] # time 0 data without baseline correction
 
@@ -37,22 +37,23 @@ data02$drytime <- 0
 data1$drytime <- 7
 data2$drytime <- 7
 
-data_dry <- data1 # with correction (automatic from calscreener)
-data_dry$value_base <- data2$value # (without correction)
+#data_dry <- data1 # with correction (automatic from calscreener)
+#data_dry$value_base <- data2$value # (without correction)
+data_dry <- rbind(data1,data02) # 0 drytime // 7 day drytime NO CORRECTION
 
 ### Raw data
 ggplot(data_dry, aes(x= Time, y = value, group = interaction(rep, glucose_conc, inoc_name))) + geom_line(aes(colour = factor(inoc))) + 
-  facet_wrap(~glucose) + 
+  facet_wrap(drytime~glucose, ncol = 4) + 
   scale_y_continuous("Heat flow") + 
   scale_color_discrete("Inoculum")
 ggsave("plots/glucose_drying_raw_data.png")
 
-# baseline correction looks better? 
-ggplot(data_dry, aes(x= Time, y = value_base, group = interaction(rep, glucose_conc, inoc_name))) + geom_line(aes(colour = factor(inoc))) + 
-  facet_wrap(~glucose) + 
-  scale_y_continuous("Heat flow") + 
-  scale_color_discrete("Inoculum")
-ggsave("plots/glucose_drying_raw_data_base_correct.png")
+# # baseline correction looks better? 
+# ggplot(data_dry, aes(x= Time, y = value_base, group = interaction(rep, glucose_conc, inoc_name))) + geom_line(aes(colour = factor(inoc))) + 
+#   facet_wrap(~glucose) + 
+#   scale_y_continuous("Heat flow") + 
+#   scale_color_discrete("Inoculum")
+# ggsave("plots/glucose_drying_raw_data_base_correct.png")
 
 
 

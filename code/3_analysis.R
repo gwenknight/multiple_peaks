@@ -116,7 +116,7 @@ g1a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("timepeak")
   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous("Value") +
-  facet_grid(drytime + inocl ~ name, scales = "free_x", labeller = labeller(name = var_name)) +
+  facet_grid(name ~ drytime + inocl, scales = "free_x", labeller = labeller(name = var_name)) +
   labs(fill = "Cluster") 
 
 g2a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("auc")), aes(x = cluster, y = value)) +
@@ -124,7 +124,7 @@ g2a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("auc")), ae
   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous("Value") +
-  facet_grid(drytime + inocl ~ name, scales = "free_x", labeller = labeller(name = var_name)) +
+  facet_grid(name ~ drytime + inocl, scales = "free_x", labeller = labeller(name = var_name)) +
   labs(fill = "Cluster") 
 
 g3a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("valpeak")), aes(x = cluster, y = value)) +
@@ -132,7 +132,7 @@ g3a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("valpeak"))
   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous("Value") +
-  facet_grid(drytime + inocl ~ name, scales = "free_x", labeller = labeller(name = var_name)) +
+  facet_grid(name ~ drytime + inocl, scales = "free_x", labeller = labeller(name = var_name)) +
   labs(fill = "Cluster") 
 
 g4a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("second_peak_h")), aes(x = cluster, y = value)) +
@@ -140,8 +140,8 @@ g4a <- ggplot(cluster_data %>% filter(inocl %in% c(3,5), name %in% c("second_pea
   scale_x_discrete("Cluster type", label = c("Normal","Double","Spike","Post-shoulder","Wide","Unclustered")) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_y_continuous("Value") +
-  facet_grid(drytime + inocl ~ name, scales = "free_x", labeller = labeller(name = var_name)) +
+  facet_grid(name ~ drytime + inocl, scales = "free_x", labeller = labeller(name = var_name)) +
   labs(fill = "Cluster") 
 
-g1a +  g2a  + g3a + g4a + plot_layout(ncol = 4)
-ggsave("plots/final/figure2_col.png", width = 13, height = 13)
+g1a +  g2a  + g3a + g4a + plot_layout(ncol = 1)
+ggsave("plots/final/figure2_row.png", width = 13, height = 13)
