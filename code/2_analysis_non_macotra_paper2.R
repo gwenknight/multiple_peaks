@@ -36,7 +36,7 @@ ggplot(param %>% filter(strain_name %in% strains), aes(x= inocl, y = v_m_h_flow,
   geom_smooth(method = lm) + 
   scale_x_continuous(breaks = seq(2:7), labels = function(x) parse(text=paste("10^",x)),"Inoculum", limits = c(1.5,6.5)) + 
   scale_y_continuous("Height of highest peak")
-ggsave("data_paper2/plots/height_peak_vs_inoculum_strain_col.png", width = 12, height = 12)
+ggsave("plots/height_peak_vs_inoculum_strain_col.png", width = 12, height = 12)
 
 
 ga <- ggplot(param %>% filter(strain_name %in% strains), aes(x = inocl, y = timepeak, group = inocl)) + 
