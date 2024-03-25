@@ -283,7 +283,8 @@ for(jj in 1:length(u)){ # for each strain
         
         if(dim(data1)[1] > 0){ # if this replicate exists for this glucose (i.e. there is data)
           
-          print(c(jj, u[jj], r[ii], inn[pp],ex[kk])) # output so can track how it is working
+          #print(c(jj, u[jj], r[ii], inn[pp],ex[kk])) # output so can track how it is working
+          print(c(jj, u[jj], r[ii], inn[pp])) # output so can track how it is working
           p <- charac_extract(data_nong, "Time", "nongrowth_only", data1, data2, "compara_norm", paste(glucose, replicate, condition, inocl,sep="_")) ### NEW function: simplification of more complex data recognition for clustering
           
           ## Required parameters
