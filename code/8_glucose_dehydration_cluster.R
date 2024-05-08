@@ -218,6 +218,24 @@ ggplot(c$parameters, aes(x=inoc, group = cluster)) +
   scale_fill_discrete("Cluster type")
 ggsave("plots/glucose_cluster_drytime.jpeg")
 
+## Match figure 1
+gf1 <- c$parameters %>% 
+  dplyr::select(inoc, cluster, strain, drytime, glucose) %>% 
+  group_by(inoc, strain, drytime, glucose) %>% summarise(u = unique(cluster)) %>% 
+  group_by(inoc, drytime, glucose, u) %>% dplyr::summarise(n=n())
+
+gf1$u <- factor(gf1$u, levels = c("normal","double","spike","post_shoulder","wide","unclustered"))
+
+ggplot(gf1, aes(x= inoc, y = n, fill= u)) + 
+  geom_bar(position="dodge", stat="identity") + 
+  scale_fill_discrete("Cluster", 
+                      labels = c("Normal","Double","Spike","Post shoulder","Wide","Unclustered")) +
+  scale_y_continuous("Number of strains") + 
+  scale_x_continuous("Inoculum", breaks = seq(1,7,1)) + 
+  geom_text(aes(label=n),position=position_dodge(width=0.9), vjust=-0.25) + 
+  facet_wrap(glucose~drytime, ncol = 2)
+ggsave("plots/glucose_cluster_drytime_distribution_strains.jpeg")
+
 
 ### STORY PIC
 para <- c$parameters %>% ungroup() %>% mutate(second_peak_h = ifelse((t_m_h_flow > (timepeak + 2)), v_m_h_flow, ifelse(mp_t2 > (timepeak + 4), mp_h2, 0))) 

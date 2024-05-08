@@ -91,7 +91,8 @@ cut_extract_dp <- function(ts, Time, value, name4output, thresh_wide = 86, plot 
       peaks_index <- peaks_index[w]
       
       # Sort by height - want to compare to and keep the tallest (first now in peaks_index)
-      o <- order(ts[peaks_index,value], decreasing = "TRUE")
+      ts1 <- as.matrix(ts)
+      o <- order(ts1[peaks_index,value], decreasing = "TRUE")
       peaks_index <- peaks_index[o]
     } else{ # if only one, check really a high point: greater than 45% of max of data
       if(ts[peaks_index,value] < 0.45*max(ts[,value])){
@@ -654,6 +655,7 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
       ####**** (Cluster 1) clear double peaks
       ####* Are there any? 
       dp <- sub_parm %>% filter(odd_peaks == 1) 
+      peaks_double <- c() # blank in case below condition not satisfied
       if(dim(dp)[1]>0){
         double_peak_curves_analysis <- as.data.frame(dp %>% group_by(strain) %>% dplyr::mutate(n_odd_peaks = n()) )
         
@@ -687,7 +689,8 @@ cluster <- function(ts, parameters, name = "clusters", plot_where = "plots/"){
         scale_color_manual("Number of\nreps with\nspike peaks", breaks = c(3,2,1,"NA"), labels = c(3,2,1,0), values = c("red","orange","blue","grey"))
       ggsave(paste0(plot_where,drytimes[j],"_",inocs[k],"_",name,"_spike_peaks.pdf"))
       
-      peaks_spike <- spiked_analysis %>% filter(n_spike > 1) %>% filter(!strain %in% unlist(peaks_double)) %>% ungroup() %>% summarise(unique(strain)) # 2 or more have spike
+      peaks_spike <- spiked_analysis %>% filter(n_spike > 1) %>% 
+        filter(!strain %in% unlist(peaks_double)) %>% ungroup() %>% summarise(unique(strain)) # 2 or more have spike
       sub_ts[which(sub_ts$strain %in% unlist(peaks_spike)), "cluster"] = "spike"
       sub_parm[which(sub_parm$strain %in% unlist(peaks_spike)), "cluster"] = "spike"
       
