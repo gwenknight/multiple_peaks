@@ -176,10 +176,10 @@ data_od0 <- data_all %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up)
 
 # Normalise
 max_vals_norm0 <- data_od0 %>% filter(glucose == 0) %>% group_by(inoc, rep, exp )%>% summarise(max_norms = max(value, na.rm = TRUE))
-max_vals_norm2p5 <- data_od0 %>% filter(glucose == 2.5) %>% group_by(inoc, rep, exp )%>% summarise(max_norms = max(value, na.rm = TRUE))
+#max_vals_norm2p5 <- data_od0 %>% filter(glucose == 2.5) %>% group_by(inoc, rep, exp )%>% summarise(max_norms = max(value, na.rm = TRUE))
 
 data_od <- left_join(data_od0, max_vals_norm0) %>% mutate(compara_norm = value / max_norms)
-data_od2p5 <- left_join(data_od0, max_vals_norm2p5) %>% mutate(compara_norm = value / max_norms)
+#data_od2p5 <- left_join(data_od0, max_vals_norm2p5) %>% mutate(compara_norm = value / max_norms)
 
 ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, glucose))) + 
   geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
@@ -187,11 +187,11 @@ ggplot(data_od, aes(x=Time, y = compara_norm, group = interaction(rep, exp, gluc
   scale_x_continuous("Time (h)") 
 ggsave("plots/glucose_data_compare_norm0.pdf")
 
-ggplot(data_od2p5, aes(x=Time, y = compara_norm, group = interaction(rep, exp, glucose))) + 
-  geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
-  facet_grid(inoc ~glucose, scales = "free") + 
-  scale_x_continuous("Time (h)") 
-ggsave("plots/glucose_data_compare_norm2p5.pdf")
+# ggplot(data_od2p5, aes(x=Time, y = compara_norm, group = interaction(rep, exp, glucose))) + 
+#   geom_line(aes(col = interaction(rep), lty = exp), lwd = 1) + 
+#   facet_grid(inoc ~glucose, scales = "free") + 
+#   scale_x_continuous("Time (h)") 
+# ggsave("plots/glucose_data_compare_norm2p5.pdf")
 
 # Subtract normalised data? Need to complete: measured at different time points
 
@@ -203,16 +203,16 @@ data_od_normd <- data_od %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < 
 
 data_od_normd_ana <- left_join(data_od, data_od_normd) # not sure why need all this information
 
-data_od_normd2p5 <- data_od2p5 %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up) %>% # make sure cover same time for all 
-  complete(rep, glucose, exp, inoc, Time) %>% dplyr::mutate(compara_norm_inp = na_ma(compara_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
-  dplyr::group_by(inoc, glucose, rep, exp) %>% dplyr::select(Time, glucose,rep, exp, inoc, compara_norm_inp) %>% # Take imputed values
-  pivot_wider(id_cols = c(glucose, Time, rep, inoc), names_from = exp, values_from = compara_norm_inp) %>%dplyr::mutate(nongrowth_only = hf - od)# %>% # look for difference between OD and heat output
-#pivot_longer(cols = c("hf","od"), names_to = "exp", values_to ="imput_val")
-
-data_od_normd_ana2p5 <- left_join(data_od2p5, data_od_normd2p5) # not sure why need all this information
+# data_od_normd2p5 <- data_od2p5 %>% ungroup() %>% filter(Time > cutoff_time_dn, Time < cutoff_time_up) %>% # make sure cover same time for all 
+#   complete(rep, glucose, exp, inoc, Time) %>% dplyr::mutate(compara_norm_inp = na_ma(compara_norm, k = 4, weighting = "linear", maxgap = 10)) %>% # fill in all time points and then linear imputation between (tried exponential and simple but get more odd bumps)
+#   dplyr::group_by(inoc, glucose, rep, exp) %>% dplyr::select(Time, glucose,rep, exp, inoc, compara_norm_inp) %>% # Take imputed values
+#   pivot_wider(id_cols = c(glucose, Time, rep, inoc), names_from = exp, values_from = compara_norm_inp) %>%dplyr::mutate(nongrowth_only = hf - od)# %>% # look for difference between OD and heat output
+# #pivot_longer(cols = c("hf","od"), names_to = "exp", values_to ="imput_val")
+# 
+# data_od_normd_ana2p5 <- left_join(data_od2p5, data_od_normd2p5) # not sure why need all this information
 
 ### Merge these two controls 
-data_od_normd2p5$control = 2.5
+#data_od_normd2p5$control = 2.5
 data_od_normd$control = 0 # USE this control 
 
 data_od_normd_ana <- data_od_normd #rbind(data_od_normd2p5, data_od_normd)

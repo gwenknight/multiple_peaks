@@ -242,48 +242,48 @@ summary(glm2)
 ## Multinomial GLMs ############################################################
 ################################################################################
 
-# Paramatric test: multinomial logistic regression > not enough data for this
-modeldata <- mlogit.data(mdd2, choice = "cluster", shape = "wide")
-
-m0 <- mlogit(cluster ~ 1, data = mdd2, reflevel = "normal") #baseline model
-summary(m0)
-m1 <- mlogit(cluster ~ 1 | lineage, data = modeldata, reflevel = "normal")
-summary(m1)
-# model with success, carriage, site or pvl does not explain variability in the data
-# model with lineage does explain variability in the data > attributed to CC30 in cluster wide
-
-## Chi-square test
-
-fisher.test(mdd1$cluster, mdd1$site, simulate.p.value=TRUE) #large dataset, simulated p-value for lineage and site
-#fisher.test(mdd2$cluster, mdd2$lineage, simulate.p.value=TRUE)
-
-# CrossTable(mdd1$lineage, mdd1$cluster)
-# chisq.test(mdd1$lineage, mdd1$cluster)
-# fisher.test(mdd1$cluster, mdd1$lineage, simulate.p.value=TRUE)
-# CrossTable(mdd2$lineage, mdd2$cluster)
-# chisq.test(mdd2$lineage, mdd2$cluster)
-# fisher.test(mdd2$cluster, mdd2$country, simulate.p.value=TRUE)
-
-table(mdd2$lineage, mdd2$cluster)
-table(mdd3$lineage, mdd3$cluster)
-
-#CrossTable(mdd3$cluster, mdd3$lineage)
-#chisq.test(mdd3$cluster, mdd3$success)
-fisher.test(mdd3$cluster, mdd3$success, simulate.p.value=FALSE)
-
-#chisq.test(mdd3$cluster, mdd3$carriage)
-fisher.test(mdd3$cluster, mdd3$carriage, simulate.p.value=FALSE)
-
-chisq.test(mdd3$cluster, mdd3$lineage)
-fisher.test(mdd3$cluster, mdd3$lineage, simulate.p.value=TRUE)
-
-# library(rstatix)
-# fisher_test(table(mdd2$lineage, mdd2$cluster), simulate.p.value=TRUE)
-# pairwise_fisher_test(as.matrix(table(mdd2$lineage, mdd2$cluster)), p.adjust.method = "fdr")
-# how to convert table to two-dimensional contingency table? maybe not working as 2xc comparison, too many categories?
-
-ggplot(mdd3 , aes(cluster, width_peak)) +
-  geom_boxplot(aes(colour = lineage)) +
-  geom_point(aes(colour = lineage)) +
-  facet_wrap(~lineage)
-ggsave("plots/metadata_width_peakCC30.png", width = 10, height = 6)
+# # Paramatric test: multinomial logistic regression > not enough data for this
+# modeldata <- mlogit.data(mdd2, choice = "cluster", shape = "wide")
+# 
+# m0 <- mlogit(cluster ~ 1, data = mdd2, reflevel = "normal") #baseline model
+# summary(m0)
+# m1 <- mlogit(cluster ~ 1 | lineage, data = modeldata, reflevel = "normal")
+# summary(m1)
+# # model with success, carriage, site or pvl does not explain variability in the data
+# # model with lineage does explain variability in the data > attributed to CC30 in cluster wide
+# 
+# ## Chi-square test
+# 
+# fisher.test(mdd1$cluster, mdd1$site, simulate.p.value=TRUE) #large dataset, simulated p-value for lineage and site
+# #fisher.test(mdd2$cluster, mdd2$lineage, simulate.p.value=TRUE)
+# 
+# # CrossTable(mdd1$lineage, mdd1$cluster)
+# # chisq.test(mdd1$lineage, mdd1$cluster)
+# # fisher.test(mdd1$cluster, mdd1$lineage, simulate.p.value=TRUE)
+# # CrossTable(mdd2$lineage, mdd2$cluster)
+# # chisq.test(mdd2$lineage, mdd2$cluster)
+# # fisher.test(mdd2$cluster, mdd2$country, simulate.p.value=TRUE)
+# 
+# table(mdd2$lineage, mdd2$cluster)
+# table(mdd3$lineage, mdd3$cluster)
+# 
+# #CrossTable(mdd3$cluster, mdd3$lineage)
+# #chisq.test(mdd3$cluster, mdd3$success)
+# fisher.test(mdd3$cluster, mdd3$success, simulate.p.value=FALSE)
+# 
+# #chisq.test(mdd3$cluster, mdd3$carriage)
+# fisher.test(mdd3$cluster, mdd3$carriage, simulate.p.value=FALSE)
+# 
+# chisq.test(mdd3$cluster, mdd3$lineage)
+# fisher.test(mdd3$cluster, mdd3$lineage, simulate.p.value=TRUE)
+# 
+# # library(rstatix)
+# # fisher_test(table(mdd2$lineage, mdd2$cluster), simulate.p.value=TRUE)
+# # pairwise_fisher_test(as.matrix(table(mdd2$lineage, mdd2$cluster)), p.adjust.method = "fdr")
+# # how to convert table to two-dimensional contingency table? maybe not working as 2xc comparison, too many categories?
+# 
+# ggplot(mdd3 , aes(cluster, width_peak)) +
+#   geom_boxplot(aes(colour = lineage)) +
+#   geom_point(aes(colour = lineage)) +
+#   facet_wrap(~lineage)
+# ggsave("plots/metadata_width_peakCC30.png", width = 10, height = 6)
