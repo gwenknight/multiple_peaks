@@ -240,7 +240,7 @@ ggsave("plots/glucose_cluster_drytime_distribution_strains.jpeg")
 ### STORY PIC
 para <- c$parameters %>% ungroup() %>% mutate(second_peak_h = ifelse((t_m_h_flow > (timepeak + 2)), v_m_h_flow, ifelse(mp_t2 > (timepeak + 4), mp_h2, 0))) 
 
-cluster_data <- para %>% dplyr::select(c("cluster", "inoc","drytime","valpeak", "timepeak", "auc", "exp_gr", "shoulder_point_v","shoulder_point_t",
+cluster_data <- para %>% dplyr::select(c("cluster", "inoc","glucose", "drytime","valpeak", "timepeak", "auc", "exp_gr", "shoulder_point_v","shoulder_point_t",
                                          "shoulder_point_past_v","shoulder_point_past_t", "second_peak_h")) %>% 
   pivot_longer(cols = c(valpeak:second_peak_h)) 
 
@@ -284,3 +284,23 @@ ggplot(param_long, aes(x=inoc, y = value, group = interaction(inoc,strain))) +
   scale_x_continuous("Inoculum") 
 ggsave("plots/glucose_conc_other_peaks.pdf")
  
+# Valerie figures:
+# drytime 0, all inoc
+ggplot(cluster_data %>% filter(drytime == 0) %>% filter(name %in% c("auc", "valpeak","exp_gr","second_peak_h")) %>% 
+         mutate(across(name, factor, levels=c("auc", "valpeak","exp_gr","second_peak_h"))), 
+       aes(x = factor(glucose), y = value)) + geom_boxplot(aes(fill = factor(glucose))) +  geom_point() +
+    facet_grid(name~inoc, scales = "free_y", labeller = labeller(name = var_name)) +
+  xlab("Glucose (g/L)") + ylab("Value") + theme(legend.position = "none")
+ggsave("plots/final/figure7_drytime0.png", width = 15, height = 9)
+# drytime 0, inoc 5
+ggplot(cluster_data %>% filter(drytime == 0, inoc == 5) %>% filter(name %in% c("auc", "valpeak","exp_gr","second_peak_h")) %>% 
+         mutate(across(name, factor, levels=c("auc", "valpeak","exp_gr","second_peak_h"))), 
+       aes(x = factor(glucose), y = value)) + geom_boxplot(aes(fill = factor(glucose))) +  geom_point() +
+  facet_wrap(inoc~name,ncol = 4, scales = "free", labeller = labeller(name = var_name))
+# drytime 7, all inoc
+ggplot(cluster_data %>% filter(drytime == 7) %>% filter(name %in% c("auc", "valpeak","exp_gr","second_peak_h")) %>% 
+         mutate(across(name, factor, levels=c("auc", "valpeak","exp_gr","second_peak_h"))), 
+       aes(x = factor(glucose), y = value)) + geom_boxplot(aes(fill = factor(glucose))) +  geom_point() +
+  facet_grid(name~inoc, scales = "free_y", labeller = labeller(name = var_name)) +
+  xlab("Glucose (g/L)") + ylab("Value") + theme(legend.position = "none")
+ggsave("plots/final/figure7_supp_drytime7.png", width = 15, height = 9)
