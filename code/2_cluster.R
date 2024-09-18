@@ -80,6 +80,7 @@ ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, 
   scale_x_continuous(lim = c(0,20)) +
   geom_text(data = eg_cluster_strains, aes(x = 5, label = cluster), y = Inf, vjust = 2)
 ggsave("plots/Example_each_cluster_strain_type.pdf")
+
 # ggplot(eg_cluster_strains, aes(x=Time, y = value_J, group = interaction(strain, rep))) +
 #   geom_line(aes(col = factor(rep_no))) + facet_wrap(~strain) + scale_color_discrete("Replicate") +
 #   scale_x_continuous("Time (h)", minor_breaks = seq(0, 20, 5), lim = c(0,20)) +
@@ -118,6 +119,7 @@ rownames(table_cluster_distribution) <- NULL
 pdf("plots/table_cluster_distribution.pdf", height=11, width=8.5)
 grid.table(table_cluster_distribution)
 dev.off()
+
 # png("plots/final/table_cluster_distribution.png", height=2, width=7, units = "in", res = 72)
 # grid.table(table_cluster_distribution)
 # dev.off()
